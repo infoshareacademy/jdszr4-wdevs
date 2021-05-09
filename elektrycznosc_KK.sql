@@ -10,6 +10,8 @@
 - przyrosty produkcji.
 
 */
+--=============================================================================
+-- Sprawdzenie kodów 
 
 -- jakie kody związane z elektrycznością
 select * from indicators i
@@ -76,7 +78,6 @@ order by 2;
 --=============================================================================
 -- WNIOSEK 2: 
 -- I latami i zużyciem konsumpcja globalna rośnie - nie było globalnego spadku zużycia prądu
-
 --=============================================================================
 
 

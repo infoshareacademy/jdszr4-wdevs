@@ -218,6 +218,10 @@ select count(*) from atom;
 -- to be continued...
 
 
+-- wyznaczyć średnie, modę zużycie / produkcję
+-- sprawdzić kto powyżej średniej / mody
+-- ...
+
 
 
 

@@ -11,7 +11,7 @@
 
 */
 --=============================================================================
--- Sprawdzenie kodów 
+-- Sprawdzenie kodów związanych z elektrycznością
 
 -- jakie kody związane z elektrycznością
 select * from indicators i
@@ -27,21 +27,72 @@ order by indicatorcode;
 select distinct indicatorname, indicatorcode from indicators i
 where lower(indicatorname) like '%electric power cons%'
 order by indicatorcode;
+
 --=============================================================================
 
 
--- zuzycie prądu krajami, latami
-select c.shortname as Kraj, i."Year" as Rok, round(i.value::numeric, 1) as zuzycie  
+-- Sprawdzenie kto bierze udział w notowaniach
+select * from country c;
+
+-- Zauważam, że w rekordach ukrywają się zbiorcze statystyki World/ Europa itd.
+-- Można je zindentyfikować przez pole alpha2code, które zawiera wtedy cyfrę.
+
+select * from country c, 
+regexp_matches(alpha2code, '[0-9]');
+
+--=================================================================================
+-- Wyciągam statystyki zbiorcze z rekordów dla regionów: World/ Europa itd.
+
+-- Sumaryczne zużycie energi elekt. w regionach / świat
+select c.shortname as Region, 
+		round(sum(i.value)::numeric, 0) as zuzycie_regiony,
+		regexp_matches(alpha2code, '[0-9]')
 from indicators i
 join country c on i.countrycode = c.countrycode
 where lower(i.indicatorname) like '%electric power cons%'
+group by c.shortname, regexp_matches(alpha2code, '[0-9]')
+order by 1 desc;
+
+
+-- Sumaryczna produkcja energi elekt. w regionach / świat
+select c.shortname as Region, 
+		round(sum(i.value)::numeric, 0) as produkcja_regiony,
+		regexp_matches(alpha2code, '[0-9]')
+from indicators i
+join country c on i.countrycode = c.countrycode
+where lower(i.indicatorname) like '%electricity prod%'
+group by c.shortname, regexp_matches(alpha2code, '[0-9]')
+order by 1 desc;
+
+-- Sumaryczna produkcja energi elekt. w regionach / świat z podziałem na źródło
+
+select c.shortname as Region, 
+		i.indicatorname zrodlo,
+		round(sum(i.value)::numeric, 0) as produkcja_regiony_zrodlami,
+		regexp_matches(alpha2code, '[0-9]')
+from indicators i
+join country c on i.countrycode = c.countrycode
+where lower(i.indicatorname) like '%electricity prod%'
+group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
+order by 1 desc;
+
+--=======================================================================================
+-- Statystyki krajami bez regionów
+
+-- zuzycie prądu krajami, latami
+select c.shortname as Kraj, 
+		i."Year" as Rok, 
+		round(i.value::numeric, 1) as zuzycie
+from indicators i
+join country c on i.countrycode = c.countrycode
+where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
 order by c.shortname, i."Year" ;
 
 -- sumaryczne zuzycie prądu krajami
 select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%'
+where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
 group by c.shortname 
 order by c.shortname;
 
@@ -49,7 +100,7 @@ order by c.shortname;
 select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%'
+where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
 group by c.shortname 
 order by 2 desc;
 
@@ -63,7 +114,7 @@ order by 2 desc;
 select i."Year" as rok,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%'
+where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
 group by i."Year" 
 order by 1;
 
@@ -71,7 +122,7 @@ order by 1;
 select i."Year" as rok,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%'
+where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
 group by i."Year" 
 order by 2;
 
@@ -87,7 +138,7 @@ select i."Year" as rok,
 		sum(round(i.value::numeric, 1)) as produkcja  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%'
+where lower(i.indicatorname) like '%electricity prod%' and c.alpha2code ~ '[^0-9]'
 group by  i."Year" , c.shortname, i.indicatorname
 order by (1,2); 
 
@@ -108,7 +159,7 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_wegiel
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%from coal sources (% of total)%'
+where lower(i.indicatorname) like '%from coal sources (% of total)%' and c.alpha2code ~ '[^0-9]'
 group by c.shortname
 order by (2) desc; 
 
@@ -126,7 +177,7 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_wegiel
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%from coal sources (% of total)%'
+	where lower(i.indicatorname) like '%from coal sources (% of total)%' and c.alpha2code ~ '[^0-9]'
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -145,7 +196,7 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_hydro
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%hydroelectric sources%'
+where lower(i.indicatorname) like '%hydroelectric sources%' and c.alpha2code ~ '[^0-9]'
 group by c.shortname
 order by (2) desc; 
 
@@ -163,7 +214,7 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_hydro
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%hydroelectric sources%'
+	where lower(i.indicatorname) like '%hydroelectric sources%' and c.alpha2code ~ '[^0-9]'
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -183,7 +234,7 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_atom
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%nuclear sources%'
+where lower(i.indicatorname) like '%nuclear sources%' and c.alpha2code ~ '[^0-9]'
 group by c.shortname
 order by (2) desc; 
 
@@ -201,7 +252,7 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_atom
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%nuclear sources%'
+	where lower(i.indicatorname) like '%nuclear sources%' and c.alpha2code ~ '[^0-9]'
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -214,12 +265,45 @@ select count(*) from atom;
 -- 110 krajów nie używa ele. atom. do produkcji elektr.
 --=============================================================================
 
+-- =====================================================
+-- Statystylo średnich / mody
+
+
+create temp table sr_zuzycie
+as
+	select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
+	from indicators i
+	join country c on i.countrycode = c.countrycode
+	where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code ~ '[^0-9]'
+	group by c.shortname 
+	order by 2 desc;
+
+-- wyznaczanie średniego i mody zużycia 
+select round(avg(zuzycie),1) as srednie_zuzycie,
+	   mode() within group (order by zuzycie) as moda_zuzycia
+from sr_zuzycie;
+
+-- wyznaczanie średniej i mody produkcji
+drop table sr_prod;
+create temp table sr_prod
+as
+	select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as produkcja  
+	from indicators i
+	join country c on i.countrycode = c.countrycode
+	where lower(i.indicatorname) like '%electricity production%' and c.alpha2code ~ '[^0-9]'
+	group by c.shortname 
+	order by 2 desc;
+
+select round(avg(produkcja),1) as srednia_produkcja,
+	   mode() within group (order by produkcja) as moda_produkcji
+from sr_prod;
+
 
 -- to be continued...
 
 
--- wyznaczyć średnie, modę zużycie / produkcję
--- sprawdzić kto powyżej średniej / mody
+-- wyznaczyć średnie, modę zużycie/produkcję
+-- sprawdzić kto powyżej/poniżej średniej/mody
 -- ...
 
 

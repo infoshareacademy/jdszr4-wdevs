@@ -138,6 +138,7 @@ order by 2;
 -- - nie było globalnego spadku zużycia prądu
 --=============================================================================
 
+-- pordukcja z różnych źródeł krajami i latami
 select i."Year" as rok, 
 		c.shortname as Country, 
 		i.indicatorname  as indicator_name, 

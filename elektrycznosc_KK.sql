@@ -139,16 +139,45 @@ order by 2;
 --=============================================================================
 
 -- pordukcja z różnych źródeł krajami i latami
+drop table prod_roczna_krajami;
+
+create temp table prod_roczna_krajami
+as
 select i."Year" as rok, 
 		c.shortname as Country, 
-		i.indicatorname  as indicator_name, 
 		sum(round(i.value::numeric, 1)) as produkcja  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
-group by  i."Year" , c.shortname, i.indicatorname
+where lower(i.indicatorname) like '%electricity prod%' 
+								and lower(i.indicatorname) not like '%kwh%'
+								and c.alpha2code !~ '[%0-9%]' 
+								and c.alpha2code !~'[X%]' 
+								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')						
+group by  i."Year" , c.shortname
 order by (1,2); 
 
+select * from prod_roczna_krajami;
+
+-- produkcja roczna krajami rodzaje
+drop table prod_roczna_krajami_zrodla;
+
+create temp table prod_roczna_krajami_zrodla
+as
+select i."Year" as rok, 
+		c.shortname as Country, 
+		i.indicatorname as Zrodlo,
+		sum(round(i.value::numeric, 1)) as produkcja  
+from indicators i
+join country c on i.countrycode = c.countrycode
+where lower(i.indicatorname) like '%electricity prod%' 
+								and lower(i.indicatorname) not like '%kwh%'
+								and c.alpha2code !~ '[%0-9%]' 
+								and c.alpha2code !~'[X%]' 
+								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+group by  i."Year" , c.shortname, i.indicatorname
+order by (1,2,3); 
+
+select * from prod_roczna_krajami_zrodla;
 
 /*
 Electricity production from coal sources (% of total)
@@ -305,15 +334,7 @@ select round(avg(produkcja),1) as srednia_produkcja,
 	   mode() within group (order by produkcja) as moda_produkcji
 from sr_prod;
 
-
 -- to be continued...
-
-
--- wyznaczyć średnie, modę zużycie/produkcję
--- sprawdzić kto powyżej/poniżej średniej/mody
--- procent kraj / świat
--- procent region / swiat
--- ...
 
 
 

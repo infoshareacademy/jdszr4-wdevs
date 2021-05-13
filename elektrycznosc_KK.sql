@@ -38,6 +38,7 @@ select * from country c;
 -- Można je zindentyfikować przez pole alpha2code, które zawiera wtedy cyfrę.
 -- Są też stowarzyszenia i frupy krajów:
 -- XC, EU, XE, XD, XR, XS, XJ, ZJ, XL XO, XM, XN, ZQ, XQ, XP, XU, OE,  ZG, ZF, XT
+-- niektóre dane w kWh inne w %
 
 select * from country c, 
 regexp_matches(alpha2code, '[0-9]');
@@ -91,14 +92,20 @@ select c.shortname as Kraj,
 		round(i.value::numeric, 1) as zuzycie
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 order by c.shortname, i."Year" ;
 
 -- sumaryczne zuzycie prądu krajami
 select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by c.shortname 
 order by c.shortname;
 
@@ -106,7 +113,10 @@ order by c.shortname;
 select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by c.shortname 
 order by 2 desc;
 
@@ -120,7 +130,10 @@ order by 2 desc;
 select i."Year" as rok,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by i."Year" 
 order by 1;
 
@@ -128,7 +141,10 @@ order by 1;
 select i."Year" as rok,  sum(round(i.value::numeric, 1)) as zuzycie  
 from indicators i
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by i."Year" 
 order by 2;
 
@@ -138,7 +154,7 @@ order by 2;
 -- - nie było globalnego spadku zużycia prądu
 --=============================================================================
 
--- pordukcja z różnych źródeł krajami i latami
+-- pordukcja z różnych źródeł krajami i latami (z wyłączeniem w kwh)
 drop table prod_roczna_krajami;
 
 create temp table prod_roczna_krajami
@@ -195,7 +211,10 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_wegiel
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%from coal sources (% of total)%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by c.shortname
 order by (2) desc; 
 
@@ -213,7 +232,10 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_wegiel
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%from coal sources (% of total)%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+	where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -232,7 +254,10 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_hydro
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%hydroelectric sources%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by c.shortname
 order by (2) desc; 
 
@@ -250,7 +275,10 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_hydro
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%hydroelectric sources%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+	where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -270,7 +298,10 @@ select  c.shortname as country,
 		sum(round(i.value::numeric, 1)) as produkcja_atom
 from indicators i 
 join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%nuclear sources%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 group by c.shortname
 order by (2) desc; 
 
@@ -288,7 +319,10 @@ as
 			sum(round(i.value::numeric, 1)) as produkcja_atom
 	from indicators i 
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%nuclear sources%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+	where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 	group by c.shortname
 	having ( sum(round(i.value::numeric, 1)) =0 )
 	order by (2) desc; 
@@ -310,7 +344,10 @@ as
 	select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as zuzycie  
 	from indicators i
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electric power cons%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+	where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 	group by c.shortname 
 	order by 2 desc;
 
@@ -326,7 +363,10 @@ as
 	select c.shortname as Kraj,  sum(round(i.value::numeric, 1)) as produkcja  
 	from indicators i
 	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electricity production%' and c.alpha2code !~ '[%0-9%]' and c.alpha2code !~'[X%]' and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
+	where lower(i.indicatorname) like '%electric power cons%' 
+							and c.alpha2code !~ '[%0-9%]' 
+							and c.alpha2code !~'[X%]' 
+							and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF')
 	group by c.shortname 
 	order by 2 desc;
 

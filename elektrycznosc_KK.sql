@@ -30,7 +30,6 @@ order by indicatorcode;
 
 --=============================================================================
 
-
 -- Sprawdzenie kto bierze udział w notowaniach
 select * from country c;
 
@@ -374,6 +373,28 @@ as
 select Kraj,
 	   avg(produkcja) over (partition by produkcja) as srednia_produkcja
 from sr_prod;
+
+
+--=======================================================================================
+-- Poza tym, może stworzyć indeksy dla szybszego przeszukiwania....
+
+drop index idx_electric;
+
+explain analyze select * from indicators i
+				where lower(indicatorname) like '%electr%'
+				order by indicatorname;
+			
+create index idx_electric on indicators(indicatorname);
+
+
+explain analyze select * from indicators i
+				where lower(indicatorname) like '%electr%'
+				order by indicatorname;
+
+
+
+
+
 
 -- to be continued...
 

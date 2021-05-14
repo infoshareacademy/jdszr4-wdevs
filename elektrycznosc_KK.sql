@@ -357,6 +357,7 @@ select round(avg(zuzycie),1) as srednie_zuzycie,
 from sr_zuzycie;
 
 -- wyznaczanie średniej i mody produkcji
+
 drop table sr_prod;
 create temp table sr_prod
 as
@@ -370,8 +371,8 @@ as
 	group by c.shortname 
 	order by 2 desc;
 
-select round(avg(produkcja),1) as srednia_produkcja,
-	   mode() within group (order by produkcja) as moda_produkcji
+select Kraj,
+	   avg(produkcja) over (partition by produkcja) as srednia_produkcja
 from sr_prod;
 
 -- to be continued...

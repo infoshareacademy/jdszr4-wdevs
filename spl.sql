@@ -160,3 +160,87 @@ order by abs(m12.value_2012 - m07.value_2007) desc;
  * followed by Turkey, Bangladesh, Germany. The profile for each country is different.
  */
 
+/*
+ * The last 2 indicators are:
+ * SL.UEM.TOTL.ZS - Unemployment, total (% of total labor force) (modeled ILO estimate) (ILO - International Labour Organization)
+ * SL.UEM.TOTL.NE.ZS - Unemployment, total (% of total labor force) (national estimate)
+ * 
+ */
+create temp table unemployement_ilo as
+select  i.countryname
+,		i."Year"
+,		i.value
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != '' and i."Year" between 2005 and 2014
+where i.indicatorcode = 'SL.UEM.TOTL.NE.ZS';
+
+create temp table unemployement_nat as
+select  i.countryname
+,		i."Year"
+,		i.value
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != '' and i."Year" between 2005 and 2014
+where i.indicatorcode = 'SL.UEM.TOTL.ZS';
+
+drop table unemployment_calculations;
+create temp table unemployment_calculations as
+select  ui.countryname
+,		ui."Year"
+,		round(ui.value::numeric, 1) value_ilo
+,		round(un.value::numeric, 1) value_national
+,		round((ui.value - un.value)::numeric,1) difference
+,		first_value(ui."Year") over (partition by ui.countryname order by ui."Year" desc) earliest_year
+,		first_value(round(ui.value::numeric, 1)) over (partition by ui.countryname order by ui."Year" desc) earliest_value
+,		first_value(ui."Year") over (partition by ui.countryname order by ui."Year" asc) latest_year
+,		first_value(round(ui.value::numeric, 1)) over (partition by ui.countryname order by ui."Year" asc) latest_value
+from unemployement_ilo ui
+join unemployement_nat un
+on ui.countryname = un.countryname and ui."Year"=un."Year";
+
+/*
+ * After creating helping tables, we can check the current best and worst in terms of unemployment.
+ */
+select  uc.countryname
+,		uc.earliest_year
+,		uc.earliest_value
+from unemployment_calculations uc
+group by 1,2,3
+order by 3 desc;
+/*
+ * The worst cases are some African and Mediterrean countries.
+ */
+
+/*
+ * Here we compare the change of unemplyement in years 2005-2014 (limited to available data).
+ * African countries are leading here, having the most room for improvement.
+ * Among the worst are Greece and Spain, hit by an economic crisis.
+ */
+select  uc.countryname
+,		case when (uc.earliest_year - uc.latest_year) != 0 then
+				  round(100 * (uc.earliest_value - uc.latest_value) / uc.latest_value / (uc.earliest_year - uc.latest_year),0)
+			 else null end change_perc_per_year
+,		case when (uc.earliest_year - uc.latest_year) != 0 then
+				  round((uc.earliest_value - uc.latest_value) / (uc.earliest_year - uc.latest_year),1)
+			 else null end change_abs_per_year
+from unemployment_calculations uc
+group by 1,2,3
+order by 3 asc;
+
+/*
+ * Let's also check if the national reported value is similar to the ILO calculated value.
+ */
+select  uc.countryname
+,		round(avg(uc.value_ilo)::numeric,0) avg_ilo
+,		round(avg(uc.value_national)::numeric,0) avg_national
+,		round(avg(uc.difference)::numeric,0) avg_difference
+from unemployment_calculations uc
+group by 1
+having round(avg(uc.difference)::numeric,0) > 1 or round(avg(uc.difference)::numeric,0) < -1
+order by 4 desc;
+/*
+ * Most of the countries report similiar values to that of ILO, with some African
+ * countries being the least honest.
+ */
+

@@ -85,3 +85,78 @@ order by 2 desc;
  * so we can see some countries in the region managed to keep the children out of the workforce.
  */
 
+/*
+ * Let's now take a closer look at SM.POP.NETM - Net migration.
+ */
+select i.countryname
+,	   i."Year"
+,	   i.value
+from indicators i
+where i.indicatorcode = 'SM.POP.NETM'
+  and (i."Year" between 2005 and 2014)
+order by 1, 2 desc, i.value desc;
+
+/*
+ * We only have data for 2012 and 2007 (avearge from 5 years).
+ * Let's see which country has the most imigration and emigration.
+ * We will only look at the countries, not regions.
+ */
+select i.countryname
+,	   i."Year"
+,	   i.value
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != ''
+where i.indicatorcode = 'SM.POP.NETM'
+  and (i."Year" = 2012)
+order by 2 desc, i.value desc;
+
+select i.countryname
+,	   i."Year"
+,	   i.value
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != ''
+where i.indicatorcode = 'SM.POP.NETM'
+  and (i."Year" = 2012)
+order by 2 desc, i.value asc;
+
+/*
+ * The top of the list includes many well developed countries like USA, Germany and Canada.
+ * The numbers might correspond to lots of emigrants from India and China seeking better job opportunities.
+ * 
+ * We can see also Turkey, Lebanon, Oman, which is probably connected with war in Syria and
+ * lot's of emigrnats from there (top of the list).
+ * 
+ * Now we will calculated the greatest change in migration for both periods.
+ */
+create temp table migration_2012 as
+select i.countryname
+,	   i.value value_2012
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != ''
+where i.indicatorcode = 'SM.POP.NETM'
+  and (i."Year" = 2012);
+
+create temp table migration_2007 as
+select i.countryname
+,	   i.value value_2007
+from indicators i
+join country c
+on c.tablename = i.countryname and c.region != ''
+where i.indicatorcode = 'SM.POP.NETM'
+  and (i."Year" = 2007);
+
+select  m12.countryname
+,		m12.value_2012
+,		m07.value_2007
+,		m12.value_2012 - m07.value_2007 difference
+from migration_2012 m12 join migration_2007 m07 on m12.countryname=m07.countryname
+order by abs(m12.value_2012 - m07.value_2007) desc;
+
+/*
+ * The biggest difference in these periods can be seen in Syria, UAE and Spain (all negative),
+ * followed by Turkey, Bangladesh, Germany. The profile for each country is different.
+ */
+

@@ -89,6 +89,31 @@ where lower(i.indicatorname) like '%electricity prod%'
 group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
 order by 1 desc;
 
+--zuzycie z podzialem na 10 lat
+select min(i."Year") from indicators i; --1960
+select max(i."Year") from indicators i; --2013
+
+drop table dziesiatki;
+create temp table dziesiatki
+as
+	select 	sum(round(i.value::numeric, 1)) filter (where i."Year" <1970) as zuzycie_do1970,
+			sum(round(i.value::numeric, 1)) filter (where i."Year">=1970 and i."Year" <1980) as zuzycie_do1980,
+			sum(round(i.value::numeric, 1)) filter (where i."Year">=1980 and i."Year" <1990) as zuzycie_do1990,
+			sum(round(i.value::numeric, 1)) filter (where i."Year">=1990 and i."Year" <2000) as zuzycie_do2000,
+			sum(round(i.value::numeric, 1)) filter (where i."Year">=2000 and i."Year" <2010) as zuzycie_do2010,
+			sum(round(i.value::numeric, 1)) filter (where i."Year">=2010 and i."Year" <2013) as zuzycie_do2013
+	from indicators i
+	join country c on i.countrycode = c.countrycode
+	where lower(i.indicatorname) like '%electric power cons%' 
+								and c.alpha2code !~ '[%0-9%]' 
+								and c.alpha2code !~'[X%]' 
+								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+select * from dziesiatki;
+
+
+--=============
+-- WNIOSEK 1: Największe globalne zużycie w latach 2000-2010, najmniejsze w latach 1960-1970
+
 
 --=====================================================================================
 
@@ -142,7 +167,7 @@ where procentowy_wzost_zuzycia = (select min(procentowy_wzost_zuzycia) from przy
 
 
 --=============
--- WNIOSEK 1: Kraj z najwększym przyrostem zyżycia: Bahrain w 1984 roku - (173.7%)
+-- WNIOSEK 2: Kraj z najwększym przyrostem zyżycia: Bahrain w 1984 roku - (173.7%)
 --			  Kraj z najwększym spadkiem zyżycia: Angola w 1976 roku - (-56%)	
 
 drop table percentyle;
@@ -177,7 +202,7 @@ group by o.kraj
 order by 2 desc;
 
 --=============
--- WNIOSEK 2: Kraje, które najwięcej razy mieściły się w 95% wielkości wzrostów: Indonesia (23), Vietnam(22), Korea(20)
+-- WNIOSEK 3: Kraje, które najwięcej razy mieściły się w 95% wielkości wzrostów: Indonesia (23), Vietnam(22), Korea(20)
 
 
 select o.kraj,
@@ -187,7 +212,7 @@ group by o.kraj
 order by 2 desc;
 
 --=============
--- WNIOSEK 3: Kraje, które najwięcej razy mieściły się w 5% wielkości wzrostów: Switzerland(46), United Kingdom(44), Canada(41), United States(39), Zambia(38!)
+-- WNIOSEK 4: Kraje, które najwięcej razy mieściły się w 5% wielkości wzrostów: Switzerland(46), United Kingdom(44), Canada(41), United States(39), Zambia(38!)
 
 
 	
@@ -207,11 +232,13 @@ as
 	group by rok, zuzycie_roczne
 	order by 1;
 
+
+drop table sumy;
 create temp table  sumy 
 as
 	select rok, 
 		sum(zuzycie_roczne) sum_zuzycie_roczne,
-		sum(zuzycie_prev_roczne) sum_zuzycie_prev_roczne
+		sum(zuzycie_prev_roczne) sum_zuzycie_prev_roczne		
 	from zuzycie_roczne_swiat 
 	group by rok;
 select * from sumy;
@@ -223,17 +250,8 @@ order by 2 desc;
 
 
 --=============
--- WNIOSEK 4: Największe przyrosty zużycia globalnie były w 1962, 1967, 1963 i 1964
+-- WNIOSEK 5: Największe przyrosty zużycia globalnie były w 1962, 1967, 1963 i 1964
 --			 Najmniejsze w latach: 2005, 2004, 2001
-
-
-
-
-
-
-
-
-
 
 
 

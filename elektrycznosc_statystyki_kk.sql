@@ -56,9 +56,9 @@ where c.alpha2code !~ '[%0-9%]'
 
 -- Wyciągam dla orientacji statystyki zbiorcze z rekordów dla regionów: World/ Europa itd.
 
--- Sumaryczne zużycie energi elekt. w regionach / świat
+-- Średnie zużycie energi elekt. w regionach / świat
 select c.shortname as Region, 
-		round(sum(i.value)::numeric, 0) as zuzycie_regiony,
+		round(avg(i.value)::numeric, 0) as zuzycie_regiony,
 		regexp_matches(alpha2code, '[0-9]')
 from indicators i
 join country c on i.countrycode = c.countrycode
@@ -89,19 +89,19 @@ where lower(i.indicatorname) like '%electricity prod%'
 group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
 order by 1 desc;
 
---zuzycie z podzialem na 10 lat
+--średnie zuzycie z podzialem na 10 lat
 select min(i."Year") from indicators i; --1960
 select max(i."Year") from indicators i; --2013
 
 drop table dziesiatki;
 create temp table dziesiatki
 as
-	select 	sum(round(i.value::numeric, 1)) filter (where i."Year" <1970) as zuzycie_do1970,
-			sum(round(i.value::numeric, 1)) filter (where i."Year">=1970 and i."Year" <1980) as zuzycie_do1980,
-			sum(round(i.value::numeric, 1)) filter (where i."Year">=1980 and i."Year" <1990) as zuzycie_do1990,
-			sum(round(i.value::numeric, 1)) filter (where i."Year">=1990 and i."Year" <2000) as zuzycie_do2000,
-			sum(round(i.value::numeric, 1)) filter (where i."Year">=2000 and i."Year" <2010) as zuzycie_do2010,
-			sum(round(i.value::numeric, 1)) filter (where i."Year">=2010 and i."Year" <2013) as zuzycie_do2013
+	select 	avg(round(i.value::numeric, 1)) filter (where i."Year" <1970) as zuzycie_do1970,
+			avg(round(i.value::numeric, 1)) filter (where i."Year">=1970 and i."Year" <1980) as zuzycie_do1980,
+			avg(round(i.value::numeric, 1)) filter (where i."Year">=1980 and i."Year" <1990) as zuzycie_do1990,
+			avg(round(i.value::numeric, 1)) filter (where i."Year">=1990 and i."Year" <2000) as zuzycie_do2000,
+			avg(round(i.value::numeric, 1)) filter (where i."Year">=2000 and i."Year" <2010) as zuzycie_do2010,
+			avg(round(i.value::numeric, 1)) filter (where i."Year">=2010 and i."Year" <2013) as zuzycie_do2013
 	from indicators i
 	join country c on i.countrycode = c.countrycode
 	where lower(i.indicatorname) like '%electric power cons%' 
@@ -112,7 +112,7 @@ select * from dziesiatki;
 
 
 --=============
--- WNIOSEK 1: Największe globalne zużycie w latach 2000-2010, najmniejsze w latach 1960-1970
+-- WNIOSEK 1: Największe średnie globalne zużycie w latach 2000-2010, najmniejsze w latach 1960-1970
 
 
 --=====================================================================================
@@ -233,25 +233,25 @@ as
 	order by 1;
 
 
-drop table sumy;
-create temp table  sumy 
+drop table srednie;
+create temp table  srednie 
 as
 	select rok, 
-		sum(zuzycie_roczne) sum_zuzycie_roczne,
-		sum(zuzycie_prev_roczne) sum_zuzycie_prev_roczne		
+		round(avg(zuzycie_roczne)::numeric, 2) avg_zuzycie_roczne,
+		round(avg(zuzycie_prev_roczne)::numeric, 2) avg_zuzycie_prev_roczne		
 	from zuzycie_roczne_swiat 
 	group by rok;
-select * from sumy;
+select * from srednie;
 
 select rok,
-		round((sum_zuzycie_roczne - sum_zuzycie_prev_roczne)/sum_zuzycie_prev_roczne,2)*100 as zuzycie_roczne_procentowe
-from sumy
+		round((avg_zuzycie_roczne - avg_zuzycie_prev_roczne)/avg_zuzycie_prev_roczne,2)*100 as zuzycie_roczne_procentowe
+from srednie
 order by 2 desc;
 
 
 --=============
--- WNIOSEK 5: Największe przyrosty zużycia globalnie były w 1962, 1967, 1963 i 1964
---			 Najmniejsze w latach: 2005, 2004, 2001
+-- WNIOSEK 5: Największe przyrosty średniego zużycia globalnie były w 1965, 1961, 1962 i 1968
+
 
 
 

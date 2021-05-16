@@ -161,7 +161,7 @@ create temp table naj
 as
 	select  distinct o.kraj,
 			o.rok,
-			procentowy_wzost_zuzycia,
+			procentowy_wzost_zuzycia			
 			case when procentowy_wzost_zuzycia >= q50 then 1 else 0 end czy_w_q50,
 			case when procentowy_wzost_zuzycia >= q95 then 1 else 0 end czy_w_q95,
 			case when procentowy_wzost_zuzycia <= q5 then 1 else 0 end czy_w_q5
@@ -188,6 +188,57 @@ order by 2 desc;
 
 --=============
 -- WNIOSEK 3: Kraje, które najwięcej razy mieściły się w 5% wielkości wzrostów: Switzerland(46), United Kingdom(44), Canada(41), United States(39), Zambia(38!)
+
+
+	
+-- zuzycie roczne bez podziału na kraje
+drop table zuzycie_roczne_swiat;
+create temp table zuzycie_roczne_swiat
+as
+	select 	i."Year" as rok,
+			round(i.value::numeric, 1) as zuzycie_roczne,
+			lag(round(i.value::numeric, 1)) over (partition by  i."Year") zuzycie_prev_roczne
+	from indicators i
+	join country c on i.countrycode = c.countrycode
+	where lower(i.indicatorname) like '%electric power cons%' 
+								and c.alpha2code !~ '[%0-9%]' 
+								and c.alpha2code !~'[X%]' 
+								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+	group by rok, zuzycie_roczne
+	order by 1;
+
+create temp table  sumy 
+as
+	select rok, 
+		sum(zuzycie_roczne) sum_zuzycie_roczne,
+		sum(zuzycie_prev_roczne) sum_zuzycie_prev_roczne
+	from zuzycie_roczne_swiat 
+	group by rok;
+select * from sumy;
+
+select rok,
+		round((sum_zuzycie_roczne - sum_zuzycie_prev_roczne)/sum_zuzycie_prev_roczne,2)*100 as zuzycie_roczne_procentowe
+from sumy
+order by 2 desc;
+
+
+--=============
+-- WNIOSEK 4: Największe przyrosty zużycia globalnie były w 1962, 1967, 1963 i 1964
+--			 Najmniejsze w latach: 2005, 2004, 2001
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

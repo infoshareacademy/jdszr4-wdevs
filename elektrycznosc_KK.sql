@@ -6,8 +6,7 @@
 - najwięksi producenci energii elektrycznej,
 - najwięksi zużywający energię elektryczną,
 - najlepsi / najgorsi w produkcji vs. zużycie energii elektrycznej,
-- przyrosty zużycia,
-- przyrosty produkcji.
+- przyrosty / statystyki
 
 */
 --=============================================================================

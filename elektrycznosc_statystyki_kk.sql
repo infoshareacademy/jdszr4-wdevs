@@ -139,7 +139,7 @@ as
 	order by 1, 2;
 select * from zuzycie_krajami;
 
--- Przyrosty zuzycia procentowe krajami/latami
+-- Przyrosty zużycia procentowe krajami/latami
 drop table przyrosty_procentowe;
 create temp table przyrosty_procentowe
 as
@@ -151,14 +151,14 @@ as
 	from zuzycie_krajami;
 select * from przyrosty_procentowe;
 
--- Kraj z największym przyrostem zuzycia
+-- Kraj z największym przyrostem zużycia
 select kraj,
 		rok,
 		procentowy_wzost_zuzycia as maksymalny_wzrost
 from przyrosty_procentowe
 where procentowy_wzost_zuzycia = (select max(procentowy_wzost_zuzycia) from przyrosty_procentowe);
 
--- Kraj z największym ujemnym przyrostem zuzycia
+-- Kraj z największym ujemnym przyrostem zużycia
 select kraj,
 		rok,
 		procentowy_wzost_zuzycia as minimalny_wzrost
@@ -216,7 +216,7 @@ order by 2 desc;
 
 
 	
--- zuzycie roczne bez podziału na kraje
+-- zużycie roczne bez podziału na kraje
 drop table zuzycie_roczne_swiat;
 create temp table zuzycie_roczne_swiat
 as
@@ -247,7 +247,6 @@ select rok,
 		round((avg_zuzycie_roczne - avg_zuzycie_prev_roczne)/avg_zuzycie_prev_roczne,2)*100 as zuzycie_roczne_procentowe
 from srednie
 order by 2 desc;
-
 
 --=============
 -- WNIOSEK 5: Największe przyrosty średniego zużycia globalnie były w 1965, 1961, 1962 i 1968

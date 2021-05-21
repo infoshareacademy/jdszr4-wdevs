@@ -1,15 +1,28 @@
 /*
  * Przeprowadzimy wstepn¹ analizê wskaŸników z grupy Social Protection & Labour
  */
-select * from series where topic like 'Social Protection%';
-select distinct topic from series where topic like 'Social Protection%';
+SELECT * 
+  FROM series 
+ WHERE topic LIKE 'Social Protection%';
+
+SELECT DISTINCT topic 
+  FROM series 
+ WHERE topic LIKE 'Social Protection%';
 --Grupa sk³ada siê z 5 podgrup, w których sk³ad wchodzi 148 ró¿nych wskaŸników
 
-select count(1) from country;
-select distinct i."Year" from indicators i order by i."Year";
+SELECT count(1) 
+  FROM country;
+
+ SELECT DISTINCT i."Year" 
+   FROM indicators i 
+  ORDER BY i."Year";
 --Posiadamy dane dla 247 krajów/regionów z lat 1960-2015
 
-select i."Year", count(1) from indicators i group by i."Year" order by i."Year";
+SELECT i."Year",
+	   count(1) 
+  FROM indicators i 
+ GROUP BY i."Year" 
+ ORDER BY i."Year";
 /*
  * Projekt zak³ada skupienie siê na sytuacji obecnej i niedawnych zmianach,
  * ograniczymy siê wiêc do lat 2005-2014. Dane z roku 2015 s¹ znacz¹co niepe³ne.
@@ -26,14 +39,18 @@ select i."Year", count(1) from indicators i group by i."Year" order by i."Year";
  * SL.SRV.EMPL.ZS - Employment in services (% of total employment)
  * per_sa_allsa.adq_pop_tot - Adequacy of social safety net programs (% of total welfare of beneficiary households)
  */
-select i.indicatorcode, i.indicatorname, count(1), i."Year"
-from indicators i
-where indicatorcode in (select s.seriescode from series s where topic like 'Social Protection%')
-	  and (i."Year" between 2005 and 2014)
-	  and (indicatorcode in ('SL.TLF.0714.ZS', 'SM.POP.NETM', 'SM.EMI.TERT.ZS', 'SL.UEM.LTRM.ZS', 'SL.UEM.TOTL.ZS',
-	  						 'SL.UEM.TOTL.NE.ZS', 'SL.SRV.EMPL.ZS', 'per_sa_allsa.adq_pop_tot'))
-group by i.indicatorcode, i.indicatorname, i."Year"
-order by 3 desc;
+SELECT i.indicatorcode, i.indicatorname,
+	   count(1), 
+	   i."Year"
+  FROM indicators AS i
+ WHERE indicatorcode IN (SELECT s.seriescode
+ 						   FROM series AS s 
+ 						  WHERE s.topic LIKE 'Social Protection%')
+   AND i."Year" BETWEEN 2005 AND 2014
+   AND indicatorcode IN ('SL.TLF.0714.ZS', 'SM.POP.NETM', 'SM.EMI.TERT.ZS', 'SL.UEM.LTRM.ZS', 'SL.UEM.TOTL.ZS',
+	  					 'SL.UEM.TOTL.NE.ZS', 'SL.SRV.EMPL.ZS', 'per_sa_allsa.adq_pop_tot')
+ GROUP BY i.indicatorcode, i.indicatorname, i."Year"
+ ORDER BY 3 DESC;
 /*
  * We have very solid data on SL.UEM.TOTL.ZS and SL.UEM.TOTL.NE.ZS (Unemployment),
  * some missing data on SL.UEM.LTRM.ZS (long-term unemployment),
@@ -52,108 +69,120 @@ order by 3 desc;
 /*
  * Starting with SL.TLF.0714.ZS - Children in employment, total (% of children ages 7-14)
  */
-create temp table children_last
-as
-select i.countryname
-,	   i."Year"
-,	   i.value
-,	   first_value(i.value) over (partition by i.countryname order by i."Year" desc) latest_value
-from indicators i
-where i.indicatorcode = 'SL.TLF.0714.ZS'
-  and (i."Year" between 2005 and 2014)
-order by 1,i."Year" desc, i.value desc;
---data for most countries come from only 1 or 2 periods, so we'll only look at the lastest
+CREATE TEMP TABLE children_last AS
+SELECT i.countryname,
+	   i."Year",
+	   i.value,
+	   FIRST_VALUE(i.value) OVER 
+	   		(PARTITION BY i.countryname ORDER BY i."Year" DESC) AS latest_value
+  FROM indicators AS i
+ WHERE i.indicatorcode = 'SL.TLF.0714.ZS'
+   AND i."Year" BETWEEN 2005 and 2014
+ ORDER BY 1, i."Year" DESC, i.value DESC;
+--data for most countries come FROM only 1 or 2 periods, so we'll only look at the lastest
 
-select distinct countryname, latest_value
-from children_last
-order by 2 desc;
+SELECT DISTINCT
+	   countryname,
+	   latest_value
+  FROM children_last
+ ORDER BY 2 DESC;
 /*
  * We won't look much at the countries with low values, as some countries with probable very low scores have no data
  * (such as western european and other well developed countries).
  * 
- * Looking at the list we find the countries where the most children have to work are African countries
+ * Looking at the list we find the countries WHERE the most children have to work are African countries
  * Let's just look at the values for Africa only.
  */
 
-select distinct cl.countryname, cl.latest_value, c.region
-from children_last cl
-join country c on cl.countryname = c.tablename
-where c.region like '%Africa%'
-order by 2 desc;
+SELECT DISTINCT
+	   cl.countryname,
+	   cl.latest_value,
+	   c.region
+  FROM children_last AS cl
+  	   JOIN country AS c
+  	   ON cl.countryname = c.tablename
+ WHERE c.region LIKE '%Africa%'
+ ORDER BY 2 DESC;
 /*
- * Sub-Saharan states have generally very poor scores, but values range from 12.5 to 62,
+ * Sub-Saharan states have generally very poor scores, but values range FROM 12.5 to 62,
  * so we can see some countries in the region managed to keep the children out of the workforce.
  */
 
 /*
  * Let's now take a closer look at SM.POP.NETM - Net migration.
  */
-select i.countryname
-,	   i."Year"
-,	   i.value
-from indicators i
-where i.indicatorcode = 'SM.POP.NETM'
-  and (i."Year" between 2005 and 2014)
-order by 1, 2 desc, i.value desc;
+SELECT i.countryname,
+	   i."Year",
+	   i.value
+  FROM indicators AS i
+ WHERE i.indicatorcode = 'SM.POP.NETM'
+   AND i."Year" BETWEEN 2005 and 2014
+ ORDER BY 1, 2 DESC, 3 DESC;
 
 /*
- * We only have data for 2012 and 2007 (avearge from 5 years).
+ * We only have data for 2012 and 2007 (avearge FROM 5 years).
  * Let's see which country has the most imigration and emigration.
  * We will only look at the countries, not regions.
  */
-select i.countryname
-,	   i."Year"
-,	   i.value
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != ''
-where i.indicatorcode = 'SM.POP.NETM'
-  and (i."Year" = 2012)
-order by 2 desc, i.value desc;
+SELECT i.countryname,
+	   i."Year",
+	   i.value
+  FROM indicators AS i
+	   JOIN country AS c
+	   ON c.tablename = i.countryname 
+	 	  AND c.region != ''
+ WHERE i.indicatorcode = 'SM.POP.NETM'
+   AND i."Year" = 2012
+ ORDER BY 2 DESC, 3 DESC;
 
-select i.countryname
-,	   i."Year"
-,	   i.value
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != ''
-where i.indicatorcode = 'SM.POP.NETM'
-  and (i."Year" = 2012)
-order by 2 desc, i.value asc;
+SELECT i.countryname,
+	   i."Year",
+	   i.value
+  FROM indicators AS i
+  	   JOIN country AS c
+	   ON c.tablename = i.countryname 
+	      AND c.region != ''
+WHERE i.indicatorcode = 'SM.POP.NETM'
+  AND i."Year" = 2012
+ORDER BY 2 DESC, i.value ASC;
 
 /*
  * The top of the list includes many well developed countries like USA, Germany and Canada.
- * The numbers might correspond to lots of emigrants from India and China seeking better job opportunities.
+ * The numbers might correspond to lots of emigrants FROM India and China seeking better job opportunities.
  * 
  * We can see also Turkey, Lebanon, Oman, which is probably connected with war in Syria and
- * lot's of emigrnats from there (top of the list).
+ * lot's of emigrnats FROM there (top of the list).
  * 
  * Now we will calculated the greatest change in migration for both periods.
  */
-create temp table migration_2012 as
-select i.countryname
-,	   i.value value_2012
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != ''
-where i.indicatorcode = 'SM.POP.NETM'
-  and (i."Year" = 2012);
+CREATE TEMP TABLE migration_2012 AS
+SELECT i.countryname,
+	   i.value AS value_2012
+  FROM indicators AS i
+ 	   JOIN country AS c
+	   ON c.tablename = i.countryname 
+	      AND c.region != ''
+ WHERE i.indicatorcode = 'SM.POP.NETM'
+   AND i."Year" = 2012;
 
-create temp table migration_2007 as
-select i.countryname
-,	   i.value value_2007
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != ''
-where i.indicatorcode = 'SM.POP.NETM'
-  and (i."Year" = 2007);
+CREATE TEMP TABLE migration_2007 AS
+SELECT i.countryname,
+	   i.value AS value_2007
+  FROM indicators AS i
+	   JOIN country AS c
+	   ON c.tablename = i.countryname
+	   	  AND c.region != ''
+ WHERE i.indicatorcode = 'SM.POP.NETM'
+   AND i."Year" = 2007;
 
-select  m12.countryname
-,		m12.value_2012
-,		m07.value_2007
-,		m12.value_2012 - m07.value_2007 difference
-from migration_2012 m12 join migration_2007 m07 on m12.countryname=m07.countryname
-order by abs(m12.value_2012 - m07.value_2007) desc;
+SELECT m12.countryname,
+	   m12.value_2012,
+	   m07.value_2007,
+	   m12.value_2012 - m07.value_2007 AS difference
+  FROM migration_2012 AS m12
+ 	   JOIN migration_2007 AS m07 
+   	   ON m12.countryname = m07.countryname
+ ORDER BY ABS(m12.value_2012 - m07.value_2007) DESC;
 
 /*
  * The biggest difference in these periods can be seen in Syria, UAE and Spain (all negative),
@@ -166,79 +195,93 @@ order by abs(m12.value_2012 - m07.value_2007) desc;
  * SL.UEM.TOTL.NE.ZS - Unemployment, total (% of total labor force) (national estimate)
  * 
  */
-create temp table unemployement_ilo as
-select  i.countryname
-,		i."Year"
-,		i.value
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != '' and i."Year" between 2005 and 2014
-where i.indicatorcode = 'SL.UEM.TOTL.NE.ZS';
+CREATE TEMP TABLE unemployement_ilo AS
+SELECT i.countryname,
+	   i."Year",
+	   i.value
+  FROM indicators AS i
+  	   JOIN country AS c
+	   ON c.tablename = i.countryname
+	      AND c.region != ''
+	      AND i."Year" BETWEEN 2005 AND 2014
+ WHERE i.indicatorcode = 'SL.UEM.TOTL.NE.ZS';
 
-create temp table unemployement_nat as
-select  i.countryname
-,		i."Year"
-,		i.value
-from indicators i
-join country c
-on c.tablename = i.countryname and c.region != '' and i."Year" between 2005 and 2014
-where i.indicatorcode = 'SL.UEM.TOTL.ZS';
+CREATE TEMP TABLE unemployement_nat AS
+SELECT i.countryname,
+	   i."Year",
+	   i.value
+  FROM indicators AS i
+	   JOIN country AS c
+	   ON c.tablename = i.countryname
+	   	  AND c.region != ''
+	   	  AND i."Year" BETWEEN 2005 AND 2014
+ WHERE i.indicatorcode = 'SL.UEM.TOTL.ZS';
 
-drop table unemployment_calculations;
-create temp table unemployment_calculations as
-select  ui.countryname
-,		ui."Year"
-,		round(ui.value::numeric, 1) value_ilo
-,		round(un.value::numeric, 1) value_national
-,		round((ui.value - un.value)::numeric,1) difference
-,		first_value(ui."Year") over (partition by ui.countryname order by ui."Year" desc) earliest_year
-,		first_value(round(ui.value::numeric, 1)) over (partition by ui.countryname order by ui."Year" desc) earliest_value
-,		first_value(ui."Year") over (partition by ui.countryname order by ui."Year" asc) latest_year
-,		first_value(round(ui.value::numeric, 1)) over (partition by ui.countryname order by ui."Year" asc) latest_value
-from unemployement_ilo ui
-join unemployement_nat un
-on ui.countryname = un.countryname and ui."Year"=un."Year";
+DROP TABLE unemployment_calculations;
+CREATE TEMP TABLE unemployment_calculations AS
+SELECT ui.countryname,
+	   ui."Year",
+	   ROUND(ui.value::numeric, 1) AS value_ilo,
+	   ROUND(un.value::numeric, 1) AS value_national,
+	   ROUND((ui.value - un.value)::numeric, 1) AS difference,
+	   FIRST_VALUE(ui."Year") OVER 
+	   		(PARTITION BY ui.countryname ORDER BY ui."Year" DESC) AS year_earliest,
+	   FIRST_VALUE(ROUND(ui.value::numeric, 1)) OVER 
+	   		(PARTITION BY ui.countryname ORDER by ui."Year" DESC) AS value_earliest,
+	   FIRST_VALUE(ui."Year") OVER 
+	   		(PARTITION BY ui.countryname ORDER BY ui."Year" ASC) AS year_latest,
+	   FIRST_VALUE(ROUND(ui.value::numeric, 1)) OVER 
+	   		(PARTITION BY ui.countryname ORDER BY ui."Year" ASC) AS value_latest
+  FROM unemployement_ilo AS ui
+	   JOIN unemployement_nat AS un
+	   ON ui.countryname = un.countryname
+	  	  AND ui."Year" = un."Year";
 
 /*
  * After creating helping tables, we can check the current best and worst in terms of unemployment.
  */
-select  uc.countryname
-,		uc.earliest_year
-,		uc.earliest_value
-from unemployment_calculations uc
-group by 1,2,3
-order by 3 desc;
+SELECT uc.countryname,
+	   uc.year_earliest,
+	   uc.value_earliest
+  FROM unemployment_calculations AS uc
+ GROUP BY 1,2,3
+ ORDER BY 3 DESC;
 /*
  * The worst cases are some African and Mediterrean countries.
  */
 
 /*
  * Here we compare the change of unemplyement in years 2005-2014 (limited to available data).
- * African countries are leading here, having the most room for improvement.
+ * African countries are leading here, HAVING the most room for improvement.
  * Among the worst are Greece and Spain, hit by an economic crisis.
  */
-select  uc.countryname
-,		case when (uc.earliest_year - uc.latest_year) != 0 then
-				  round(100 * (uc.earliest_value - uc.latest_value) / uc.latest_value / (uc.earliest_year - uc.latest_year),0)
-			 else null end change_perc_per_year
-,		case when (uc.earliest_year - uc.latest_year) != 0 then
-				  round((uc.earliest_value - uc.latest_value) / (uc.earliest_year - uc.latest_year),1)
-			 else null end change_abs_per_year
-from unemployment_calculations uc
-group by 1,2,3
-order by 3 asc;
+SELECT uc.countryname,
+	   CASE
+	   WHEN (uc.year_earliest - uc.year_latest) != 0 THEN
+			ROUND(100 * (uc.value_earliest - uc.value_latest) / uc.value_latest / (uc.year_earliest - uc.year_latest), 0)
+	   ELSE NULL 
+	   END AS change_perc_per_year,
+	   CASE 
+	   WHEN (uc.year_earliest - uc.year_latest) != 0 THEN
+	   		ROUND((uc.value_earliest - uc.value_latest) / (uc.year_earliest - uc.year_latest), 1)
+	   ELSE NULL
+	   END AS change_abs_per_year
+  FROM unemployment_calculations AS uc
+ GROUP BY 1,2,3
+ ORDER BY 3 ASC;
 
 /*
  * Let's also check if the national reported value is similar to the ILO calculated value.
  */
-select  uc.countryname
-,		round(avg(uc.value_ilo)::numeric,0) avg_ilo
-,		round(avg(uc.value_national)::numeric,0) avg_national
-,		round(avg(uc.difference)::numeric,0) avg_difference
-from unemployment_calculations uc
-group by 1
-having round(avg(uc.difference)::numeric,0) > 1 or round(avg(uc.difference)::numeric,0) < -1
-order by 4 desc;
+SELECT uc.countryname,
+	   ROUND(AVG(uc.value_ilo)::numeric, 0) AS ilo_avg,
+	   ROUND(AVG(uc.value_national)::numeric, 0) AS national_avg,
+	   ROUND(AVG(uc.difference)::numeric, 0) AS difference_avg
+  FROM unemployment_calculations AS uc
+ GROUP BY 1
+HAVING ROUND(AVG(uc.difference)::numeric, 0) > 1 
+	OR ROUND(AVG(uc.difference)::numeric, 0) < -1
+ ORDER BY 4 DESC;
 /*
  * Most of the countries report similiar values to that of ILO, with some African
  * countries being the least honest.

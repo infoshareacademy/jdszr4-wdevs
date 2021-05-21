@@ -155,35 +155,28 @@ ORDER BY 2 DESC, i.value ASC;
  * 
  * Now we will calculated the greatest change in migration for both periods.
  */
-CREATE TEMP TABLE migration_2012 AS
-SELECT i.countryname,
-	   i.value AS value_2012
-  FROM indicators AS i
- 	   JOIN country AS c
-	   ON c.tablename = i.countryname 
-	      AND c.region != ''
- WHERE i.indicatorcode = 'SM.POP.NETM'
-   AND i."Year" = 2012;
-
-CREATE TEMP TABLE migration_2007 AS
-SELECT i.countryname,
-	   i.value AS value_2007
-  FROM indicators AS i
-	   JOIN country AS c
-	   ON c.tablename = i.countryname
-	   	  AND c.region != ''
- WHERE i.indicatorcode = 'SM.POP.NETM'
-   AND i."Year" = 2007;
-
-SELECT m12.countryname,
-	   m12.value_2012,
-	   m07.value_2007,
-	   m12.value_2012 - m07.value_2007 AS difference
-  FROM migration_2012 AS m12
- 	   JOIN migration_2007 AS m07 
-   	   ON m12.countryname = m07.countryname
- ORDER BY ABS(m12.value_2012 - m07.value_2007) DESC;
-
+WITH m_07_12 AS 
+	(SELECT i.countryname,
+			i.value AS value_2007,
+			i2.value AS value_2012
+	   FROM indicators AS i
+	   	 	JOIN country AS c
+			  ON c.tablename = i.countryname
+	   	  		 AND c.region != ''
+ 	  			 AND i.indicatorcode = 'SM.POP.NETM'
+   				 AND i."Year" = 2007
+   			JOIN indicators AS i2
+   			  ON i2.countryname = i.countryname
+ 	  			 AND i2.indicatorcode = 'SM.POP.NETM'
+   			  	 AND i2."Year" = 2012
+)
+SELECT m_07_12.countryname,
+	   m_07_12.value_2012,
+	   m_07_12.value_2007,
+	   m_07_12.value_2012 - m_07_12.value_2007 AS difference
+  FROM m_07_12
+ ORDER BY ABS(m_07_12.value_2012 - m_07_12.value_2007) DESC;
+  
 /*
  * The biggest difference in these periods can be seen in Syria, UAE and Spain (all negative),
  * followed by Turkey, Bangladesh, Germany. The profile for each country is different.

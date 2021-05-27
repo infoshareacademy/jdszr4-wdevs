@@ -246,7 +246,7 @@ as
 select * from srednie;
 
 select rok,
-		round((avg_zuzycie_roczne - avg_zuzycie_prev_roczne)/avg_zuzycie_prev_roczne,2)*100 as zuzycie_roczne_procentowe
+		round((avg_zuzycie_roczne - avg_zuzycie_prev_roczne)/avg_zuzycie_prev_roczne,4)*100 as zuzycie_roczne_procentowe
 from srednie
 order by 2 desc;
 
@@ -319,6 +319,34 @@ as final_result(
 	"EG.ELC.RNWX.ZS" numeric);
 	
 
+-- Produkcja roczna bez podziału na kraje
+drop table produkcja_roczna_swiat;
+create temp table produkcja_roczna_swiat
+as
+	select 	i."Year" as rok,
+			round(i.value::numeric, 1) as produkcja_roczna,
+			lag(round(i.value::numeric, 1)) over (partition by  i."Year") produkcja_prev_roczna
+	from indicators i
+	join country c on i.countrycode = c.countrycode
+	where lower(i.indicatorname) like '%electricity prod%' and lower(i.indicatorcode) like '%zs' and i.value <>0
+	group by rok, produkcja_roczna
+	order by 1;
+select * from produkcja_roczna_swiat;
+
+drop table srednia;
+create temp table  srednia
+as
+	select rok, 
+		round(avg(produkcja_roczna)::numeric, 2) avg_produkcja_roczna,
+		round(avg(produkcja_prev_roczna)::numeric, 2) avg_produkcja_prev_roczna		
+	from produkcja_roczna_swiat 
+	group by rok;
+select * from srednia;
+
+select rok,
+		round((avg_produkcja_roczna - avg_produkcja_prev_roczna)/avg_produkcja_prev_roczna,4)*100 as produkcja_roczna_procentowa
+from srednia
+order by 2 desc;
 
 -- to be continued...
 

@@ -254,6 +254,10 @@ order by 2 desc;
 -- WNIOSEK 5: Największe przyrosty średniego zużycia globalnie były w 1965, 1961, 1962 i 1968
 
 
+
+--============================================================
+-- Produkcja elektryczności
+
 -- W końcu zrobiłem crosstaba...Zamiast długich nazw użyłem kodów.
 
 select distinct indicatorname, indicatorcode from indicators i
@@ -264,7 +268,7 @@ select i."Year" as rok,
 		c.shortname as Country, 
 		i.indicatorname  as indicator_name,
 		i.indicatorcode as icode,
-		sum(round(i.value::numeric, 1)) as zuzycie  
+		sum(round(i.value::numeric, 1)) as produkcja 
 from indicators i
 join country c on i.countrycode = c.countrycode
 where lower(i.indicatorname) like '%electricity prod%'
@@ -282,7 +286,7 @@ as
 select  c.shortname as country, 
 		i.indicatorname  as indicator_name, 
 		i.indicatorcode as icode,
-		sum(round(i.value::numeric, 1)) as zuzycie
+		sum(round(i.value::numeric, 1)) produkcja
 from indicators i 
 join country c on i.countrycode = c.countrycode
 where lower(i.indicatorname) like '%electricity prod%' and lower(i.indicatorcode) like '%zs' and i.value <>0
@@ -291,7 +295,7 @@ order by (1,2);
 
 select country, 
 		icode, 
-		zuzycie 
+		produkcja
 from dane 
 where icode like '%ZS'
 order by 1,2;
@@ -300,7 +304,7 @@ order by 1,2;
 SELECT * 
 FROM crosstab('select country, 
 						icode, 
-						sum(zuzycie) as suma 
+						sum(produkcja) as suma 
 				from dane 
 				group by country, icode
 				order by 1,2 ')

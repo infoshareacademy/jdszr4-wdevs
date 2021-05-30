@@ -3,6 +3,7 @@ Electricity production / consumption (1960 - 2012)
 
 Data from kaggle.com
 Krzysztof Kadowski, 2021-06-10
+
 **/
 --=============================================================================
 --Data preparation
@@ -40,13 +41,15 @@ Indicators + codes:
 */
 
 --Countries
-SELECT * FROM country c;
+SELECT * 
+FROM country c;
 
 -- World / Europe / Asia / another groups of countries - have a number in alpha2code code or letters: 
 -- XC, EU, XE, XD, XR, XS, XJ, ZJ, XL XO, XM, XN, ZQ, XQ, XP, XU, OE,  ZG, ZF, XT
 
 --Regions
-SELECT * FROM country c, 
+SELECT * 
+FROM country c, 
 regexp_matches(alpha2code, '[0-9]');
 
 --List of countries without stats of groups of countries
@@ -98,11 +101,11 @@ DROP TABLE IF EXISTS ten_years;
 CREATE TEMP TABLE ten_years
 AS
 	SELECT 	avg(i.value) filter (where i."Year" <1970) AS to_1970,
-			avg(i.value) filter (where i."Year">=1970 and i."Year" <1980) AS to_1980,
-			avg(i.value) filter (where i."Year">=1980 and i."Year" <1990) AS to_1990,
-			avg(i.value) filter (where i."Year">=1990 and i."Year" <2000) AS to_2000,
-			avg(i.value) filter (where i."Year">=2000 and i."Year" <2010) AS to_2010,
-			avg(i.value) filter (where i."Year">=2010 and i."Year" <2013) AS to_2013
+			avg(i.value) filter (where i."Year">=1970 AND i."Year" <1980) AS to_1980,
+			avg(i.value) filter (where i."Year">=1980 AND i."Year" <1990) AS to_1990,
+			avg(i.value) filter (where i."Year">=1990 AND i."Year" <2000) AS to_2000,
+			avg(i.value) filter (where i."Year">=2000 AND i."Year" <2010) AS to_2010,
+			avg(i.value) filter (where i."Year">=2010 AND i."Year" <2013) AS to_2013
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
@@ -218,7 +221,7 @@ AS
 		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
 	GROUP BY yearof, year_consum
 	ORDER BY 1;
-select * from zuzycie_roczne_swiat
+select * from year_consumption_world;
 
 
 DROP TABLE IF EXISTS avg_year;
@@ -269,9 +272,9 @@ CREATE extension tablefunc;
 DROP TABLE IF EXISTS prod_temp;
 CREATE TEMP TABLE prod_temp
 AS
-SELECT c.shortname as country, 
-	i.indicatorname  as indicator_name, 
-	i.indicatorcode as icode,
+SELECT c.shortname AS country, 
+	i.indicatorname  AS indicator_name, 
+	i.indicatorcode As icode,
 	sum(round(i.value::numeric, 1)) production
 FROM indicators i 
 JOIN country c ON i.countrycode = c.countrycode
@@ -295,7 +298,7 @@ FROM crosstab('
 	from prod_temp 
 	group by country, icode
 	order by 1,2 ')
-as final_result(
+AS final_result(
 	country varchar(200),
 	"EG.ELC.COAL.ZS" numeric,
 	"EG.ELC.FOSL.ZS" numeric,
@@ -310,7 +313,7 @@ as final_result(
 DROP TABLE IF EXISTS year_produc_world;
 CREATE TEMP TABLE year_produc_world
 AS
-	SELECT i."Year" as yearof,
+	SELECT i."Year" AS yearof,
 		round(i.value::numeric, 1) AS year_produc,
 		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_produc_prev
 	FROM indicators i
@@ -333,7 +336,7 @@ SELECT *
 FROM avg_produc;
 
 SELECT yearof,
-	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 as percent_avg_year_produc_prev
+	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_prev
 FROM avg_produc
 ORDER BY 2 DESC;
 

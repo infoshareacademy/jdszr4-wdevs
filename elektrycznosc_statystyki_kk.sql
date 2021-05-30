@@ -252,10 +252,10 @@ WHERE lower(indicatorname) LIKE '%electricity prod%'
 ORDER BY indicatorcode;
 
 SELECT i."Year" AS yearof, 
-		c.shortname AS country, 
-		i.indicatorname  Asindicator_name,
-		i.indicatorcode AS icode,
-		sum(round(i.value::numeric, 1)) AS production 
+	c.shortname AS country, 
+	i.indicatorname  Asindicator_name,
+	i.indicatorcode AS icode,
+	sum(round(i.value::numeric, 1)) AS production 
 FROM indicators i
 JOIN country c ON i.countrycode = c.countrycode
 WHERE lower(i.indicatorname) LIKE '%electricity prod%'
@@ -288,12 +288,13 @@ ORDER BY 1,2;
 
 -- Electricity production in % / kWh of totalby countries
 SELECT * 
-FROM crosstab('select country, 
-						icode, 
-						sum(production) as sum_prod 
-				from prod_temp 
-				group by country, icode
-				order by 1,2 ')
+FROM crosstab('
+	select country,
+	icode, 
+	sum(production) as sum_prod 
+	from prod_temp 
+	group by country, icode
+	order by 1,2 ')
 as final_result(
 	country varchar(200),
 	"EG.ELC.COAL.ZS" numeric,

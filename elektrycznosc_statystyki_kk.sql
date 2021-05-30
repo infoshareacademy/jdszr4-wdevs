@@ -9,22 +9,26 @@ Krzysztof Kadowski, 2021-06-10
 --=============================================================================
 
 --All indocators for electricity
-select * from indicators i
-where lower(indicatorname) like '%electr%'
-order by indicatorname ;
+SELECT* FROM indicators i
+WHERE lower(indicatorname) LIKE '%electr%'
+ORDER BY indicatorname ;
 
 --Indicators for production
-select distinct indicatorname, indicatorcode from indicators i
-where lower(indicatorname) like '%electricity prod%'
-order by indicatorcode;
+SELECT DISTINCT indicatorname, indicatorcode 
+FROM indicators i
+WHERE lower(indicatorname) LIKE '%electricity prod%'
+ORDER BY indicatorcode;
 
 --Indicators for consumption
-select distinct indicatorname, indicatorcode from indicators i
-where lower(indicatorname) like '%electric power cons%'
-order by indicatorcode;
+SELECT DISTINCT indicatorname, indicatorcode 
+FROM indicators i
+WHERE lower(indicatorname) LIKE '%electric power cons%'
+ORDER BY indicatorcode;
 
 /*
 Indicators + codes: 
+	Electric power consumption (kWh per capita)	EG.USE.ELEC.KH.PC
+	
 	Electricity production from coal sources (% of total)	EG.ELC.COAL.ZS
 	Electricity production from oil, gas and coal sources (% of total)	EG.ELC.FOSL.ZS
 	Electricity production from hydroelectric sources (% of total)	EG.ELC.HYRO.ZS
@@ -34,228 +38,209 @@ Indicators + codes:
 	Electricity production from renewable sources, excluding hydroelectric (kWh)	EG.ELC.RNWX.KH
 	Electricity production from renewable sources, excluding hydroelectric (% of total)	EG.ELC.RNWX.ZS
 */
---=============================================================================
 
--- Sprawdzenie kto bierze udział w notowaniach
-select * from country c;
+--Countries
+SELECT * FROM country c;
 
--- Zauważam, że w rekordach ukrywają się zbiorcze statystyki World/ Europa itd.
--- Można je zindentyfikować przez pole alpha2code, które zawiera wtedy cyfrę.
--- Są też stowarzyszenia i frupy krajów:
+-- World / Europe / Asia / another groups of countries - have a number in alpha2code code or letters: 
 -- XC, EU, XE, XD, XR, XS, XJ, ZJ, XL XO, XM, XN, ZQ, XQ, XP, XU, OE,  ZG, ZF, XT
--- niektóre dane w kWh inne w %
 
---regiony
-select * from country c, 
+--Regions
+SELECT * FROM country c, 
 regexp_matches(alpha2code, '[0-9]');
 
---kraje
-select * from country c
-where c.alpha2code !~ '[%0-9%]' 
-		and c.alpha2code !~'[X%]' 
-		and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+--List of countries without stats of groups of countries
+SELECT * FROM country c
+WHERE c.alpha2code !~ '[%0-9%]' 
+	AND c.alpha2code !~'[X%]' 
+	AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+	
+--Min and Max year
+SELECT min(i."Year")
+FROM indicators i; --1960
 
+SELECT max(i."Year") 
+FROM indicators i; --2013
 
---=================================================================================
+--======================================================================
+-- Cumulative statistics of electr. consumption per capita from records 
+-- for regions: World / Europe / Asia / etc. 
+--======================================================================
 
--- Wyciągam dla orientacji statystyki zbiorcze z rekordów dla regionów: World/ Europa itd.
-
--- Średnie zużycie energi elekt. w regionach / świat
-select c.shortname as Region, 
-		round(avg(i.value)::numeric, 0) as zuzycie_regiony,
+-- Electr. consumption in regions in years
+DROP TABLE IF EXISTS region_electr_consumption;
+CREATE TEMP TABLE region_electr_consumption
+AS
+	SELECT c.shortname AS Region, 
+		i."Year",
+		round(i.value::NUMERIC, 2) AS consumption,
 		regexp_matches(alpha2code, '[0-9]')
-from indicators i
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electric power cons%'
-group by c.shortname, regexp_matches(alpha2code, '[0-9]')
-order by 1 desc;
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%'
+	GROUP BY c.shortname, i."Year", i.value, regexp_matches(alpha2code, '[0-9]')
+	ORDER BY 2;
+
+SELECT * 
+FROM region_electr_consumption;
 
 
--- Sumaryczna produkcja energi elekt. w regionach / świat
-select c.shortname as Region, 
-		round(sum(i.value)::numeric, 0) as produkcja_regiony,
-		regexp_matches(alpha2code, '[0-9]')
-from indicators i
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%'
-group by c.shortname, regexp_matches(alpha2code, '[0-9]')
-order by 1 desc;
-
--- Sumaryczna produkcja energi elekt. w regionach / świat z podziałem na źródło
-
-select c.shortname as Region, 
-		i.indicatorname zrodlo,
-		round(sum(i.value)::numeric, 0) as produkcja_regiony_zrodlami,
-		regexp_matches(alpha2code, '[0-9]')
-from indicators i
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%'
-group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
-order by 1 desc;
-
---średnie zuzycie z podzialem na 10 lat
-select min(i."Year") from indicators i; --1960
-select max(i."Year") from indicators i; --2013
-
-drop table if exists dziesiatki;
-create temp table dziesiatki
-as
-	select 	avg(round(i.value::numeric, 1)) filter (where i."Year" <1970) as zuzycie_do1970,
-			avg(round(i.value::numeric, 1)) filter (where i."Year">=1970 and i."Year" <1980) as zuzycie_do1980,
-			avg(round(i.value::numeric, 1)) filter (where i."Year">=1980 and i."Year" <1990) as zuzycie_do1990,
-			avg(round(i.value::numeric, 1)) filter (where i."Year">=1990 and i."Year" <2000) as zuzycie_do2000,
-			avg(round(i.value::numeric, 1)) filter (where i."Year">=2000 and i."Year" <2010) as zuzycie_do2010,
-			avg(round(i.value::numeric, 1)) filter (where i."Year">=2010 and i."Year" <2013) as zuzycie_do2013
-	from indicators i
-	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electric power cons%' 
-								and c.alpha2code !~ '[%0-9%]' 
-								and c.alpha2code !~'[X%]' 
-								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
-select * from dziesiatki;
+--Average electr. consumption by regions 
+SELECT Region,
+	ROUND(avg(consumption)::NUMERIC,1) avg_consumption
+FROM region_electr_consumption
+GROUP BY Region
+ORDER BY 2;
 
 
---=============
--- WNIOSEK 1: Największe średnie globalne zużycie w latach 2000-2010, najmniejsze w latach 1960-1970
+--Average electr. consumption by every 10 years 
+DROP TABLE IF EXISTS ten_years;
+CREATE TEMP TABLE ten_years
+AS
+	SELECT 	avg(i.value) filter (where i."Year" <1970) AS to_1970,
+			avg(i.value) filter (where i."Year">=1970 and i."Year" <1980) AS to_1980,
+			avg(i.value) filter (where i."Year">=1980 and i."Year" <1990) AS to_1990,
+			avg(i.value) filter (where i."Year">=1990 and i."Year" <2000) AS to_2000,
+			avg(i.value) filter (where i."Year">=2000 and i."Year" <2010) AS to_2010,
+			avg(i.value) filter (where i."Year">=2010 and i."Year" <2013) AS to_2013
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
+		AND c.alpha2code !~ '[%0-9%]' 
+		AND c.alpha2code !~'[X%]' 
+		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+SELECT * FROM ten_years;
 
 
---=====================================================================================
-
--- Właściwe statystyki - Zużycie energii elektrycznej
-
---=====================================================================================
-
--- Tab. pomocnicza
-drop table if exists zuzycie_krajami;
-create temp table zuzycie_krajami
-as
-	select c.shortname as kraj, 
-			i."Year" as rok,
-			round(i.value::numeric, 1) as zuzycie,
-			lag(round(i.value::numeric, 1)) over (partition by c.shortname order by c.shortname, i."Year") zuzycie_prev
-	from indicators i
-	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electric power cons%' 
-								and c.alpha2code !~ '[%0-9%]' 
-								and c.alpha2code !~'[X%]' 
-								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
-	group by kraj, rok, zuzycie
-	order by 1, 2;
-select * from zuzycie_krajami;
-
--- Przyrosty zużycia procentowe krajami/latami
-drop table if exists przyrosty_procentowe;
-create temp table przyrosty_procentowe
-as
-	select kraj, 
-			rok,
-			zuzycie,
-			zuzycie_prev,
-			round((zuzycie - zuzycie_prev)/ zuzycie_prev, 3)*100 as procentowy_wzost_zuzycia
-	from zuzycie_krajami;
-select * from przyrosty_procentowe;
-
--- Kraj z największym przyrostem zużycia
-select kraj,
-		rok,
-		procentowy_wzost_zuzycia as maksymalny_wzrost
-from przyrosty_procentowe
-where procentowy_wzost_zuzycia = (select max(procentowy_wzost_zuzycia) from przyrosty_procentowe);
-
--- Kraj z największym ujemnym przyrostem zużycia
-select kraj,
-		rok,
-		procentowy_wzost_zuzycia as minimalny_wzrost
-from przyrosty_procentowe
-where procentowy_wzost_zuzycia = (select min(procentowy_wzost_zuzycia) from przyrosty_procentowe);
+--Electr. consumption by countries
+DROP TABLE IF EXISTS consumption_by_countires;
+CREATE TEMP TABLE consumption_by_countires
+AS
+	SELECT c.shortname AS country, 
+		i."Year" AS yearof,
+		round(i.value::numeric, 1) AS consumption,
+		lag(round(i.value::numeric, 1)) OVER (PARTITION BY c.shortname ORDER BY c.shortname, i."Year") consumption_prev
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
+		AND c.alpha2code !~ '[%0-9%]' 
+		AND c.alpha2code !~'[X%]' 
+		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+	GROUP BY country, yearof, consumption
+	ORDER BY 1, 2;
+SELECT * FROM consumption_by_countires;
 
 
---=============
--- WNIOSEK 2: Kraj z najwększym przyrostem zyżycia: Bahrain w 1984 roku - (173.7%)
---			  Kraj z najwększym spadkiem zyżycia: Angola w 1976 roku - (-56%)	
-
-drop table if exists percentyle;
-create temp table percentyle
-as
-	select	rok,
-			percentile_disc(0.95) within group (order by procentowy_wzost_zuzycia) q95,
-			percentile_disc(0.5) within group (order by procentowy_wzost_zuzycia) q50,
-			percentile_disc(0.05) within group (order by procentowy_wzost_zuzycia) q5
-	from przyrosty_procentowe
-	group by 1;
-select * from percentyle;
-
-drop table if exists naj;
-create temp table naj
-as
-	select  distinct o.kraj,
-			o.rok,
-			procentowy_wzost_zuzycia			
-			case when procentowy_wzost_zuzycia >= q50 then 1 else 0 end czy_w_q50,
-			case when procentowy_wzost_zuzycia >= q95 then 1 else 0 end czy_w_q95,
-			case when procentowy_wzost_zuzycia <= q5 then 1 else 0 end czy_w_q5
-	from przyrosty_procentowe o
-	cross join percentyle;
-
-select * from naj;
-
-select o.kraj,
-	   sum(o.czy_w_q95) as suma95
-from naj o 
-group by o.kraj
-order by 2 desc;
-
---=============
--- WNIOSEK 3: Kraje, które najwięcej razy mieściły się w 95% wielkości wzrostów: Indonesia (23), Vietnam(22), Korea(20)
+-- Percentage increases in consumption by countries / years 
+DROP TABLE IF EXISTS percent_increases;
+CREATE TEMP TABLE percent_increases
+AS
+	SELECT country, 
+		yearof,
+		consumption,
+		consumption_prev,
+		round((consumption - consumption_prev)/ consumption_prev, 3)*100 AS percent_consumption_incr
+	FROM consumption_by_countires;
+SELECT * 
+FROM percent_increases;
 
 
-select o.kraj,
-	   sum(o.czy_w_q5) as suma5
-from naj o 
-group by o.kraj
-order by 2 desc;
+-- Country with the greatest increase in consumption 
+SELECT country,
+	yearof,
+	percent_consumption_incr
+FROM percent_increases
+WHERE percent_consumption_incr = (SELECT max(percent_consumption_incr) FROM percent_increases);
 
---=============
--- WNIOSEK 4: Kraje, które najwięcej razy mieściły się w 5% wielkości wzrostów: Switzerland(46), United Kingdom(44), Canada(41), United States(39), Zambia(38!)
-
+-- Country with the largest negative consumption growth 
+SELECT country,
+	yearof,
+	percent_consumption_incr
+FROM percent_increases
+WHERE percent_consumption_incr = (SELECT min(percent_consumption_incr) FROM percent_increases);
 
 	
--- zużycie roczne bez podziału na kraje
-drop table if exists zuzycie_roczne_swiat;
-create temp table zuzycie_roczne_swiat
-as
-	select 	i."Year" as rok,
-			round(i.value::numeric, 1) as zuzycie_roczne,
-			lag(round(i.value::numeric, 1)) over (partition by  i."Year") zuzycie_prev_roczne
-	from indicators i
-	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electric power cons%' 
-								and c.alpha2code !~ '[%0-9%]' 
-								and c.alpha2code !~'[X%]' 
-								and c.alpha2code not in ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
-	group by rok, zuzycie_roczne
-	order by 1;
+
+DROP TABLE IF EXISTS percentyle;
+CREATE TEMP TABLE percentyle
+AS
+	SELECT	yearof,
+		percentile_disc(0.95) WITHIN GROUP (ORDER BY percent_consumption_incr) q95,
+		percentile_disc(0.5) WITHIN GROUP (ORDER BY percent_consumption_incr) q50,
+		percentile_disc(0.05) WITHIN GROUP (ORDER BY percent_consumption_incr) q5
+	FROM percent_increases
+	GROUP BY 1;
+SELECT * 
+FROM percentyle;
 
 
-drop table if exists srednie;
-create temp table  srednie 
-as
-	select rok, 
-		round(avg(zuzycie_roczne)::numeric, 2) avg_zuzycie_roczne,
-		round(avg(zuzycie_prev_roczne)::numeric, 2) avg_zuzycie_prev_roczne		
-	from zuzycie_roczne_swiat 
-	group by rok;
-select * from srednie;
+DROP TABLE IF EXISTS high;
+CREATE TEMP TABLE high
+AS
+	SELECT DISTINCT o.country,
+		o.yearof,
+		percent_consumption_incr,			
+		CASE WHEN percent_consumption_incr >= q50 THEN 1 ELSE 0 END in_q50,
+		CASE WHEN percent_consumption_incr >= q95 THEN 1 ELSE 0 END in_q95,
+		CASE WHEN percent_consumption_incr <= q5 THEN 1 ELSE 0 END in_q5
+	FROM percent_increases o
+	CROSS JOIN percentyle;
+SELECT * 
+FROM high;
 
-select rok,
-		round((avg_zuzycie_roczne - avg_zuzycie_prev_roczne)/avg_zuzycie_prev_roczne,4)*100 as zuzycie_roczne_procentowe
-from srednie
-order by 2 desc;
+--Countries in 95%
+SELECT o.country,
+	   sum(o.in_q95) as sum_q95
+FROM high o 
+GROUP BY o.country
+ORDER BY 2 DESC;
 
---=============
--- WNIOSEK 5: Największe przyrosty średniego zużycia globalnie były w 1965, 1961, 1962 i 1968
+-- Countries in 5%
+SELECT o.country,
+	   sum(in_q5) AS sum_q5
+FROM high o 
+GROUP BY o.country
+ORDER BY 2 DESC;
 
 
+-- Annual electr. consumption no-group by country 
+DROP TABLE IF EXISTS year_consumption_world;
+CREATE TEMP TABLE year_consumption_world
+AS
+	SELECT i."Year" AS yearof,
+		round(i.value::numeric, 1) AS year_consum,
+		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_consum_prev
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
+		AND c.alpha2code !~ '[%0-9%]' 
+		AND c.alpha2code !~'[X%]' 
+		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+	GROUP BY yearof, year_consum
+	ORDER BY 1;
+select * from zuzycie_roczne_swiat
+
+
+DROP TABLE IF EXISTS avg_year;
+CREATE TEMP TABLE avg_year 
+AS
+	SELECT yearof, 
+		round(avg(year_consum)::numeric, 2) avg_year_consum,
+		round(avg(year_consum_prev)::numeric, 2) avg_year_consum_prev		
+	FROM year_consumption_world
+	GROUP BY yearof;
+SELECT * 
+FROM avg_year;
+
+-- The largest increases in average consumption globally 
+SELECT yearof,
+		round((avg_year_consum - avg_year_consum_prev)/avg_year_consum_prev,4)*100 as percet_avg_year_consum
+FROM avg_year
+ORDER BY 2 DESC;
+
+
+
+-- IN PROGRESS.............
 
 --============================================================
 -- Produkcja elektryczności
@@ -350,9 +335,28 @@ select rok,
 from srednia
 order by 2 desc;
 
+
+
+
+
+
+
 -- to be continued...
 
+--======================================================================
+-- Cumulative statistics of electr. production in % of total from records 
+-- for regions: World / Europe / Asia / etc. 
+--======================================================================
 
+select c.shortname as Region, 
+		i.indicatorname zrodlo,
+		round(sum(i.value)::numeric, 0) as produkcja_regiony_zrodlami,
+		regexp_matches(alpha2code, '[0-9]')
+from indicators i
+join country c on i.countrycode = c.countrycode
+where lower(i.indicatorname) like '%electricity prod%'
+group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
+order by 1 desc;
 
 
 

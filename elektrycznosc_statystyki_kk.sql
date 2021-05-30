@@ -101,11 +101,11 @@ DROP TABLE IF EXISTS ten_years;
 CREATE TEMP TABLE ten_years
 AS
 	SELECT 	avg(i.value) filter (where i."Year" <1970) AS to_1970,
-			avg(i.value) filter (where i."Year">=1970 AND i."Year" <1980) AS to_1980,
-			avg(i.value) filter (where i."Year">=1980 AND i."Year" <1990) AS to_1990,
-			avg(i.value) filter (where i."Year">=1990 AND i."Year" <2000) AS to_2000,
-			avg(i.value) filter (where i."Year">=2000 AND i."Year" <2010) AS to_2010,
-			avg(i.value) filter (where i."Year">=2010 AND i."Year" <2013) AS to_2013
+		avg(i.value) filter (where i."Year">=1970 AND i."Year" <1980) AS to_1980,
+		avg(i.value) filter (where i."Year">=1980 AND i."Year" <1990) AS to_1990,
+		avg(i.value) filter (where i."Year">=1990 AND i."Year" <2000) AS to_2000,
+		avg(i.value) filter (where i."Year">=2000 AND i."Year" <2010) AS to_2010,
+		avg(i.value) filter (where i."Year">=2010 AND i."Year" <2013) AS to_2013
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
@@ -290,24 +290,107 @@ WHERE icode LIKE '%ZS'
 ORDER BY 1,2;
 
 -- Electricity production in % / kWh of totalby countries
-SELECT * 
-FROM crosstab('
-	select country,
-	icode, 
-	sum(production) as sum_prod 
-	from prod_temp 
-	group by country, icode
-	order by 1,2 ')
-AS final_result(
-	country varchar(200),
-	"EG.ELC.COAL.ZS" numeric,
-	"EG.ELC.FOSL.ZS" numeric,
-	"EG.ELC.HYRO.ZS" numeric,
-	"EG.ELC.NGAS.ZS" numeric,
-	"EG.ELC.NUCL.ZS" numeric,
-	"EG.ELC.PETR.ZS" numeric,
-	"EG.ELC.RNWX.ZS" numeric);
+DROP TABLE IF EXISTS cross_production;
+CREATE TEMP TABLE cross_production
+AS
+	SELECT * 
+	FROM crosstab('
+		select country,
+		icode, 
+		sum(production) as sum_prod 
+		from prod_temp 
+		group by country, icode
+		order by 1,2 ')
+	AS final_result(
+		country varchar(200),
+		"EG.ELC.COAL.ZS" numeric,
+		"EG.ELC.FOSL.ZS" numeric,
+		"EG.ELC.HYRO.ZS" numeric,
+		"EG.ELC.NGAS.ZS" numeric,
+		"EG.ELC.NUCL.ZS" numeric,
+		"EG.ELC.PETR.ZS" numeric,
+		"EG.ELC.RNWX.ZS" numeric)
+	ORDER BY 2 DESC;
+SELECT *
+FROM cross_production;
 	
+-- Highest production from COAL (% of total)
+SELECT country, "EG.ELC.COAL.ZS"
+FROM cross_production
+WHERE "EG.ELC.COAL.ZS" IS NOT NULL
+ORDER by 2 DESC;
+
+-- Lowest / no production from COAL (% of total)
+SELECT country, "EG.ELC.COAL.ZS"
+FROM cross_production
+ORDER by 2;
+
+-- Highest production from oil, gas and coal (% of total)
+SELECT country, "EG.ELC.FOSL.ZS"
+FROM cross_production
+WHERE "EG.ELC.FOSL.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from oil, gas and coal (% of total)
+SELECT country, "EG.ELC.FOSL.ZS"
+FROM cross_production
+ORDER BY 2;
+
+-- Highest production from hydroelectric sources (% of total)
+SELECT country, "EG.ELC.HYRO.ZS"
+FROM cross_production
+WHERE "EG.ELC.HYRO.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from hydroelectric sources (% of total)
+SELECT country, "EG.ELC.HYRO.ZS"
+FROM cross_production
+ORDER BY 2;
+
+-- Highest production from natural gas sources (% of total)
+SELECT country, "EG.ELC.NGAS.ZS"
+FROM cross_production
+WHERE "EG.ELC.NGAS.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from natural gas sources (% of total)
+SELECT country, "EG.ELC.NGAS.ZS"
+FROM cross_production
+ORDER BY 2;
+
+-- Highest production from nuclear sources (% of total)
+SELECT country, "EG.ELC.NUCL.ZS"
+FROM cross_production
+WHERE "EG.ELC.NUCL.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from nuclear sources (% of total)
+SELECT country, "EG.ELC.NUCL.ZS"
+FROM cross_production
+ORDER BY 2;
+
+-- Highest production from oil sources (% of total)
+SELECT country, "EG.ELC.PETR.ZS"
+FROM cross_production
+WHERE "EG.ELC.PETR.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from oil sources (% of total)
+SELECT country, "EG.ELC.PETR.ZS"
+FROM cross_production
+ORDER BY 2;
+
+-- Highest production from renewable sources, excluding hydroelectric (% of total)
+SELECT country, "EG.ELC.RNWX.ZS"
+FROM cross_production
+WHERE "EG.ELC.RNWX.ZS" IS NOT NULL
+ORDER by 2 DESC;
+
+-- Lowest / no production from renewable sources, excluding hydroelectric (% of total)
+SELECT country, "EG.ELC.RNWX.ZS"
+FROM cross_production
+ORDER by 2;
+
 
 -- Annual production without grouping by countries 
 DROP TABLE IF EXISTS year_produc_world;

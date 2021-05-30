@@ -1,4 +1,6 @@
 /*
+
+WORLD DEVELOPMENT INDICATORS
 Electricity production / consumption (1960 - 2012)
 
 Data from kaggle.com
@@ -419,7 +421,7 @@ SELECT *
 FROM avg_produc;
 
 SELECT yearof,
-	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_prev
+	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_incr
 FROM avg_produc
 ORDER BY 2 DESC;
 

@@ -63,7 +63,7 @@ SELECT max(i."Year")
 FROM indicators i; --2013
 
 --======================================================================
--- Cumulative statistics of electr. consumption per capita from records 
+-- Statistics of electr. consumption per capita from records 
 -- for regions: World / Europe / Asia / etc. 
 --======================================================================
 
@@ -240,59 +240,58 @@ ORDER BY 2 DESC;
 
 
 
--- IN PROGRESS.............
-
 --============================================================
--- Produkcja elektryczności
+--Electricity production in % / kWh of total
+--============================================================
 
--- W końcu zrobiłem crosstaba...Zamiast długich nazw użyłem kodów.
+-- Indicators of electr. production
+SELECT DISTINCT indicatorname, 
+	indicatorcode 
+FROM indicators i
+WHERE lower(indicatorname) LIKE '%electricity prod%'
+ORDER BY indicatorcode;
 
-select distinct indicatorname, indicatorcode from indicators i
-where lower(indicatorname) like '%electricity prod%'
-order by indicatorcode;
+SELECT i."Year" AS yearof, 
+		c.shortname AS country, 
+		i.indicatorname  Asindicator_name,
+		i.indicatorcode AS icode,
+		sum(round(i.value::numeric, 1)) AS production 
+FROM indicators i
+JOIN country c ON i.countrycode = c.countrycode
+WHERE lower(i.indicatorname) LIKE '%electricity prod%'
+GROUP BY  i."Year" , c.shortname, i.indicatorname, i.indicatorcode 
+ORDER BY (1,2); 
 
-select i."Year" as rok, 
-		c.shortname as Country, 
-		i.indicatorname  as indicator_name,
-		i.indicatorcode as icode,
-		sum(round(i.value::numeric, 1)) as produkcja 
-from indicators i
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%'
-group by  i."Year" , c.shortname, i.indicatorname, i.indicatorcode 
-order by (1,2); 
-
--- odpaliłem rozszerzenia dla crosstaba
+-- Extention for crosstab
 CREATE extension tablefunc;
 
--- utworzyłem sobie tabelę tyczmaczsową z danymi, które mnie interesują 
-drop table if exists dane;
 
-create temp table dane
-as
-select  c.shortname as country, 
-		i.indicatorname  as indicator_name, 
-		i.indicatorcode as icode,
-		sum(round(i.value::numeric, 1)) produkcja
-from indicators i 
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%' and lower(i.indicatorcode) like '%zs' and i.value <>0
-group by c.shortname, i.indicatorname, i.indicatorcode 
-order by (1,2); 
+DROP TABLE IF EXISTS prod_temp;
+CREATE TEMP TABLE prod_temp
+AS
+SELECT c.shortname as country, 
+	i.indicatorname  as indicator_name, 
+	i.indicatorcode as icode,
+	sum(round(i.value::numeric, 1)) production
+FROM indicators i 
+JOIN country c ON i.countrycode = c.countrycode
+WHERE lower(i.indicatorname) LIKE'%electricity prod%' AND lower(i.indicatorcode) LIKE'%zs' AND i.value <>0
+GROUP BY c.shortname, i.indicatorname, i.indicatorcode 
+ORDER BY (1,2); 
 
-select country, 
-		icode, 
-		produkcja
-from dane 
-where icode like '%ZS'
-order by 1,2;
+SELECT country, 
+	icode, 
+	production
+FROM prod_temp 
+WHERE icode LIKE '%ZS'
+ORDER BY 1,2;
 
- 
+-- Electricity production in % / kWh of totalby countries
 SELECT * 
 FROM crosstab('select country, 
 						icode, 
-						sum(produkcja) as suma 
-				from dane 
+						sum(production) as sum_prod 
+				from prod_temp 
 				group by country, icode
 				order by 1,2 ')
 as final_result(
@@ -306,57 +305,36 @@ as final_result(
 	"EG.ELC.RNWX.ZS" numeric);
 	
 
--- Produkcja roczna bez podziału na kraje
-drop table if exists produkcja_roczna_swiat;
-create temp table produkcja_roczna_swiat
-as
-	select 	i."Year" as rok,
-			round(i.value::numeric, 1) as produkcja_roczna,
-			lag(round(i.value::numeric, 1)) over (partition by  i."Year") produkcja_prev_roczna
-	from indicators i
-	join country c on i.countrycode = c.countrycode
-	where lower(i.indicatorname) like '%electricity prod%' and lower(i.indicatorcode) like '%zs' and i.value <>0
-	group by rok, produkcja_roczna
-	order by 1;
-select * from produkcja_roczna_swiat;
+-- Annual production without grouping by countries 
+DROP TABLE IF EXISTS year_produc_world;
+CREATE TEMP TABLE year_produc_world
+AS
+	SELECT i."Year" as yearof,
+		round(i.value::numeric, 1) AS year_produc,
+		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_produc_prev
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electricity prod%' AND lower(i.indicatorcode) LIKE '%zs' AND i.value <>0
+	GROUP BY yearof, year_produc
+	ORDER BY 1;
+SELECT *
+FROM year_produc_world;
 
-drop table if exists srednia;
-create temp table  srednia
-as
-	select rok, 
-		round(avg(produkcja_roczna)::numeric, 2) avg_produkcja_roczna,
-		round(avg(produkcja_prev_roczna)::numeric, 2) avg_produkcja_prev_roczna		
-	from produkcja_roczna_swiat 
-	group by rok;
-select * from srednia;
+DROP TABLE IF EXISTS avg_produc;
+CREATE TEMP TABLE avg_produc
+AS
+	SELECT yearof, 
+		round(avg(year_produc)::numeric, 2) avg_year_produc,
+		round(avg(year_produc_prev)::numeric, 2) avg_year_produc_prev		
+	FROM year_produc_world
+	GROUP BY yearof;
+SELECT * 
+FROM avg_produc;
 
-select rok,
-		round((avg_produkcja_roczna - avg_produkcja_prev_roczna)/avg_produkcja_prev_roczna,4)*100 as produkcja_roczna_procentowa
-from srednia
-order by 2 desc;
-
-
-
-
-
+SELECT yearof,
+	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 as percent_avg_year_produc_prev
+FROM avg_produc
+ORDER BY 2 DESC;
 
 
 -- to be continued...
-
---======================================================================
--- Cumulative statistics of electr. production in % of total from records 
--- for regions: World / Europe / Asia / etc. 
---======================================================================
-
-select c.shortname as Region, 
-		i.indicatorname zrodlo,
-		round(sum(i.value)::numeric, 0) as produkcja_regiony_zrodlami,
-		regexp_matches(alpha2code, '[0-9]')
-from indicators i
-join country c on i.countrycode = c.countrycode
-where lower(i.indicatorname) like '%electricity prod%'
-group by c.shortname, i.indicatorname, regexp_matches(alpha2code, '[0-9]')
-order by 1 desc;
-
-
-

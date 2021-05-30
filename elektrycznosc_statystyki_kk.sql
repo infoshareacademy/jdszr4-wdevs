@@ -1,28 +1,30 @@
 /*
-TEMAT: Analiza zużycia / produkcji energii elektrycznej.
-	
-Zakres lat: 1960 - 2012
+Electricity production / consumption (1960 - 2012)
+
+Data from kaggle.com
+Krzysztof Kadowski, 2021-06-10
 **/
 --=============================================================================
--- Sprawdzenie kodów związanych z elektrycznością
+--Data preparation
+--=============================================================================
 
--- jakie kody związane z elektrycznością
+--All indocators for electricity
 select * from indicators i
 where lower(indicatorname) like '%electr%'
 order by indicatorname ;
 
--- jakie kody produkcji elektryczności
+--Indicators for production
 select distinct indicatorname, indicatorcode from indicators i
 where lower(indicatorname) like '%electricity prod%'
 order by indicatorcode;
 
--- jakie kody konsumpcji elektryczności
+--Indicators for consumption
 select distinct indicatorname, indicatorcode from indicators i
 where lower(indicatorname) like '%electric power cons%'
 order by indicatorcode;
 
 /*
- Zakres wskaźników:
+Indicators + codes: 
 	Electricity production from coal sources (% of total)	EG.ELC.COAL.ZS
 	Electricity production from oil, gas and coal sources (% of total)	EG.ELC.FOSL.ZS
 	Electricity production from hydroelectric sources (% of total)	EG.ELC.HYRO.ZS
@@ -95,7 +97,7 @@ order by 1 desc;
 select min(i."Year") from indicators i; --1960
 select max(i."Year") from indicators i; --2013
 
-drop table dziesiatki;
+drop table if exists dziesiatki;
 create temp table dziesiatki
 as
 	select 	avg(round(i.value::numeric, 1)) filter (where i."Year" <1970) as zuzycie_do1970,
@@ -124,7 +126,7 @@ select * from dziesiatki;
 --=====================================================================================
 
 -- Tab. pomocnicza
-drop table zuzycie_krajami;
+drop table if exists zuzycie_krajami;
 create temp table zuzycie_krajami
 as
 	select c.shortname as kraj, 
@@ -142,7 +144,7 @@ as
 select * from zuzycie_krajami;
 
 -- Przyrosty zużycia procentowe krajami/latami
-drop table przyrosty_procentowe;
+drop table if exists przyrosty_procentowe;
 create temp table przyrosty_procentowe
 as
 	select kraj, 
@@ -172,7 +174,7 @@ where procentowy_wzost_zuzycia = (select min(procentowy_wzost_zuzycia) from przy
 -- WNIOSEK 2: Kraj z najwększym przyrostem zyżycia: Bahrain w 1984 roku - (173.7%)
 --			  Kraj z najwększym spadkiem zyżycia: Angola w 1976 roku - (-56%)	
 
-drop table percentyle;
+drop table if exists percentyle;
 create temp table percentyle
 as
 	select	rok,
@@ -183,7 +185,7 @@ as
 	group by 1;
 select * from percentyle;
 
-drop table naj;
+drop table if exists naj;
 create temp table naj
 as
 	select  distinct o.kraj,
@@ -219,7 +221,7 @@ order by 2 desc;
 
 	
 -- zużycie roczne bez podziału na kraje
-drop table zuzycie_roczne_swiat;
+drop table if exists zuzycie_roczne_swiat;
 create temp table zuzycie_roczne_swiat
 as
 	select 	i."Year" as rok,
@@ -235,7 +237,7 @@ as
 	order by 1;
 
 
-drop table srednie;
+drop table if exists srednie;
 create temp table  srednie 
 as
 	select rok, 
@@ -279,7 +281,7 @@ order by (1,2);
 CREATE extension tablefunc;
 
 -- utworzyłem sobie tabelę tyczmaczsową z danymi, które mnie interesują 
-drop table dane;
+drop table if exists dane;
 
 create temp table dane
 as
@@ -320,7 +322,7 @@ as final_result(
 	
 
 -- Produkcja roczna bez podziału na kraje
-drop table produkcja_roczna_swiat;
+drop table if exists produkcja_roczna_swiat;
 create temp table produkcja_roczna_swiat
 as
 	select 	i."Year" as rok,
@@ -333,7 +335,7 @@ as
 	order by 1;
 select * from produkcja_roczna_swiat;
 
-drop table srednia;
+drop table if exists srednia;
 create temp table  srednia
 as
 	select rok, 

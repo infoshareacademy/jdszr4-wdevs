@@ -427,3 +427,9 @@ ORDER BY 2 DESC;
 
 
 -- to be continued...
+
+
+Select countryname, indicatorcode, indicatorname, value from indicators i
+where lower(indicatorname) like '%opulation, tota%';
+
+

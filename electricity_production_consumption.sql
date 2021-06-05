@@ -39,15 +39,61 @@ Indicators + codes:
 	Electricity production from nuclear sources (% of total)	EG.ELC.NUCL.ZS
 	Electricity production from oil sources (% of total)	EG.ELC.PETR.ZS
 	Electricity production from renewable sources, excluding hydroelectric (kWh)	EG.ELC.RNWX.KH
-	Electricity production from renewable sources, excluding hydroelectric (% of total)	EG.ELC.RNWX.ZS
+	Electricity productio	n from renewable sources, excluding hydroelectric (% of total)	EG.ELC.RNWX.ZS
 */
 
 --Countries
 SELECT * 
 FROM country c;
 
+--Countries & Region
+SELECT c.shortname, 
+	c.countrycode, 
+	c.region,
+	c.alpha2code 
+FROM country c
+ORDER BY c.region;
+
+
 -- World / Europe / Asia / another groups of countries - have a number in alpha2code code or letters: 
--- XC, EU, XE, XD, XR, XS, XJ, ZJ, XL XO, XM, XN, ZQ, XQ, XP, XU, OE,  ZG, ZF, XT
+-- 7E 1W S4 F1 Z7 S3 B8 8S S2 S1 1A Z4 4E XO
+-- XU XE XD XR XS XP XQ XT XN XM  XL XJ XC
+-- ZJ  EU ZG  ZF ZQ OE 
+/*
+ *Latin America & Caribbean (all income levels)	ZJ
+Europe & Central Asia (developing only)	7E
+European Union	EU
+World	1W
+Other small states	S4
+Fragile and conflict affected situations	F1
+OECD members	OE
+North America	XU
+Sub-Saharan Africa (all income levels)	ZG
+Europe & Central Asia (all income levels)	Z7
+Heavily indebted poor countries (HIPC)	XE
+High income	XD
+High income: nonOECD	XR
+High income: OECD	XS
+Sub-Saharan Africa (developing only)	ZF
+Caribbean small states	S3
+Central Europe and the Baltics	B8
+South Asia	8S
+Middle income	XP
+Middle East & North Africa (developing only)	XQ
+Upper middle income	XT
+Middle East & North Africa (all income levels)	ZQ
+Small states	S1
+Arab World	1A
+Lower middle income	XN
+Low income	XM
+East Asia & Pacific (all income levels)	Z4
+East Asia & Pacific (developing only)	4E
+Low & middle income	XO
+Least developed countries: UN classification	XL
+Pacific island small states	S2
+Latin America & Caribbean (developing only)	XJ
+Euro area	XC
+ */
 
 --Regions
 SELECT * 
@@ -55,10 +101,16 @@ FROM country c,
 regexp_matches(alpha2code, '[0-9]');
 
 --List of countries without stats of groups of countries
-SELECT * FROM country c
+SELECT * 
+FROM country c
 WHERE c.alpha2code !~ '[%0-9%]' 
 	AND c.alpha2code !~'[X%]' 
 	AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+-- OR
+SELECT * 
+FROM country c
+WHERE c.region <>'';
+
 	
 --Min and Max year
 SELECT min(i."Year")
@@ -67,7 +119,7 @@ FROM indicators i; --1960
 SELECT max(i."Year") 
 FROM indicators i; --2013
 
--- Countries population to get total consupmtion / production
+-- Countries population to get total consumption / production
 DROP TABLE IF EXISTS population;
 CREATE TEMP TABLE population
 AS
@@ -96,12 +148,11 @@ CREATE TEMP TABLE region_electr_consumption_pc
 AS
 	SELECT c.shortname AS Region, 
 		i."Year",
-		round(i.value::NUMERIC, 2) AS consumption,
-		regexp_matches(alpha2code, '[0-9]')
+		round(i.value::NUMERIC, 2) AS consumption
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
-	WHERE lower(i.indicatorname) LIKE '%electric power cons%'
-	GROUP BY c.shortname, i."Year", i.value, regexp_matches(alpha2code, '[0-9]')
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region =''
+	GROUP BY c.shortname, i."Year", i.value
 	ORDER BY 2;
 
 SELECT * 
@@ -115,7 +166,7 @@ GROUP BY Region
 ORDER BY 2;
 
 
---Average electr. consumption (per capita) by every 10 years 
+--Average electr. consumption in coutries (per capita) by every 10 years 
 DROP TABLE IF EXISTS ten_years;
 CREATE TEMP TABLE ten_years
 AS
@@ -127,10 +178,7 @@ AS
 		avg(i.value) filter (where i."Year">=2010 AND i."Year" <2013) AS to_2013
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
-	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
-		AND c.alpha2code !~ '[%0-9%]' 
-		AND c.alpha2code !~'[X%]' 
-		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF');
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>'';
 SELECT * FROM ten_years;
 
 
@@ -144,10 +192,7 @@ AS
 		lag(round(i.value::numeric, 1)) OVER (PARTITION BY c.shortname ORDER BY c.shortname, i."Year") consumption_prev
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
-	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
-		AND c.alpha2code !~ '[%0-9%]' 
-		AND c.alpha2code !~'[X%]' 
-		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>''
 	GROUP BY country, yearof, consumption
 	ORDER BY 1, 2;
 SELECT * FROM consumption_by_countires_pc;
@@ -234,10 +279,7 @@ AS
 		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_consum_prev
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
-	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
-		AND c.alpha2code !~ '[%0-9%]' 
-		AND c.alpha2code !~'[X%]' 
-		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>'' 
 	GROUP BY yearof, year_consum
 	ORDER BY 1;
 select * from year_consumption_world_pc;
@@ -274,18 +316,16 @@ AS
 		i."Year",
 		round(i.value::NUMERIC, 2) AS percapita,
 		p.population AS population,
-		round(i.value::NUMERIC, 2) * p.population AS consumption_tot,
-		regexp_matches(alpha2code, '[0-9]')
+		round(i.value::NUMERIC, 2) * p.population AS consumption_tot
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
 	JOIN population p ON i.countrycode =p.countrycode 
-	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
+	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region=''
 	AND i."Year" = p."Year"
 	GROUP BY c.shortname, 
 		i."Year", 
 		i.value, 
-		p.population,
-		regexp_matches(alpha2code, '[0-9]')
+		p.population
 	ORDER BY 2;
 
 SELECT * 
@@ -310,10 +350,7 @@ AS
 	JOIN country c ON i.countrycode = c.countrycode
 	JOIN population p ON c.countrycode =p.countrycode
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
-		AND p."Year" = i."Year"
-		AND c.alpha2code !~ '[%0-9%]' 
-		AND c.alpha2code !~'[X%]' 
-		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+		AND p."Year" = i."Year" AND c.region<>''
 	GROUP BY country, yearof, i.value, consumption_tot, p.population
 	ORDER BY 1, 2;
 SELECT * FROM consumption_by_countires_tot;
@@ -412,10 +449,7 @@ AS
 	JOIN country c ON i.countrycode = c.countrycode
 	JOIN population p ON c.countrycode =p.countrycode
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' 
-		AND p."Year" = i."Year"
-		AND c.alpha2code !~ '[%0-9%]' 
-		AND c.alpha2code !~'[X%]' 
-		AND c.alpha2code NOT IN ('EU', 'ZJ', 'ZQ', 'OE', 'ZG', 'ZF') 
+		AND p."Year" = i."Year" AND c.region<>''
 	GROUP BY i.countryname, yearof, year_consum_tot
 	ORDER BY 1;
 SELECT * 

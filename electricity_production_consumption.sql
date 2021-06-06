@@ -55,12 +55,12 @@ FROM country c
 ORDER BY c.region;
 
 
+-- World / Europe / Asia / another groups of countries - have a number in alpha2code code or letters: 
+-- 7E 1W S4 F1 Z7 S3 B8 8S S2 S1 1A Z4 4E XO
+-- XU XE XD XR XS XP XQ XT XN XM  XL XJ XC
+-- ZJ  EU ZG  ZF ZQ OE 
 /*
-World / Europe / Asia / another groups of countries - have a number in alpha2code code or letters: 
-- 7E 1W S4 F1 Z7 S3 B8 8S S2 S1 1A Z4 4E XO
-- XU XE XD XR XS XP XQ XT XN XM  XL XJ XC
-- ZJ  EU ZG  ZF ZQ OE 
-Latin America & Caribbean (all income levels)	ZJ
+ *Latin America & Caribbean (all income levels)	ZJ
 Europe & Central Asia (developing only)	7E
 European Union	EU
 World	1W
@@ -93,14 +93,12 @@ Least developed countries: UN classification	XL
 Pacific island small states	S2
 Latin America & Caribbean (developing only)	XJ
 Euro area	XC
-
-Regions have "Region" collumn empty.
  */
 
 --Regions
 SELECT * 
-FROM country c
-WHERE c.region='';
+FROM country c, 
+regexp_matches(alpha2code, '[0-9]');
 
 --List of countries without stats of groups of countries
 SELECT * 
@@ -181,8 +179,7 @@ AS
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>'';
-SELECT * 
-FROM ten_years;
+SELECT * FROM ten_years;
 
 
 --Electr. consumption (per capita) by countries
@@ -198,8 +195,7 @@ AS
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>''
 	GROUP BY country, yearof, consumption
 	ORDER BY 1, 2;
-SELECT * 
-FROM consumption_by_countires_pc;
+SELECT * FROM consumption_by_countires_pc;
 
 
 -- Percentage increases in consumption (per capita) by countries / years 
@@ -221,14 +217,14 @@ SELECT country,
 	yearof,
 	percent_consumption_incr
 FROM percent_increases_pc
-WHERE percent_consumption_incr = (SELECT max(percent_consumption_incr) FROM percent_increases_pc);
+WHERE percent_consumption_incr = (SELECT max(percent_consumption_incr) FROM percent_increases);
 
 -- Country with the largest negative consumption growth  (per capita)
 SELECT country,
 	yearof,
 	percent_consumption_incr
 FROM percent_increases_pc
-WHERE percent_consumption_incr = (SELECT min(percent_consumption_incr) FROM percent_increases_pc);
+WHERE percent_consumption_incr = (SELECT min(percent_consumption_incr) FROM percent_increases);
 
 	
 
@@ -257,7 +253,7 @@ AS
 	FROM percent_increases_pc o
 	CROSS JOIN percentyle_pc;
 SELECT * 
-FROM high_pc;
+FROM high;
 
 --Countries in 95% (per capita)
 SELECT o.country,
@@ -286,8 +282,7 @@ AS
 	WHERE lower(i.indicatorname) LIKE '%electric power cons%' AND c.region<>'' 
 	GROUP BY yearof, year_consum
 	ORDER BY 1;
-select * 
-from year_consumption_world_pc;
+select * from year_consumption_world_pc;
 
 
 DROP TABLE IF EXISTS avg_year_pc;

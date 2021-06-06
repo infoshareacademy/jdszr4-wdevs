@@ -503,14 +503,15 @@ SELECT i."Year" AS yearof,
 	sum(round(i.value::numeric, 1)) AS production 
 FROM indicators i
 JOIN country c ON i.countrycode = c.countrycode
-WHERE lower(i.indicatorname) LIKE '%electricity prod%'
+JOIN population p ON c.countrycode = p.countrycode
+WHERE lower(i.indicatorname) LIKE '%electricity prod%' AND p."Year" = i."Year" AND c.region<>''
 GROUP BY  i."Year" , c.shortname, i.indicatorname, i.indicatorcode 
 ORDER BY (1,2); 
 
 -- Extention for crosstab
 CREATE extension tablefunc;
 
-
+-- Production in countries (without Regions)
 DROP TABLE IF EXISTS prod_temp;
 CREATE TEMP TABLE prod_temp
 AS
@@ -520,7 +521,8 @@ SELECT c.shortname AS country,
 	sum(round(i.value::numeric, 1)) production
 FROM indicators i 
 JOIN country c ON i.countrycode = c.countrycode
-WHERE lower(i.indicatorname) LIKE'%electricity prod%' AND lower(i.indicatorcode) LIKE'%zs' AND i.value <>0
+JOIN population p ON c.countrycode = p.countrycode
+WHERE lower(i.indicatorname) LIKE'%electricity prod%' AND lower(i.indicatorcode) LIKE'%zs' AND i.value <>0 AND p."Year" = i."Year" AND c.region<>''
 GROUP BY c.shortname, i.indicatorname, i.indicatorcode 
 ORDER BY (1,2); 
 
@@ -643,7 +645,8 @@ AS
 		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_produc_prev
 	FROM indicators i
 	JOIN country c ON i.countrycode = c.countrycode
-	WHERE lower(i.indicatorname) LIKE '%electricity prod%' AND lower(i.indicatorcode) LIKE '%zs' AND i.value <>0
+	JOIN population p ON c.countrycode = p.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electricity prod%' AND lower(i.indicatorcode) LIKE '%zs' AND i.value <>0 AND p."Year" = i."Year" AND c.region<>''
 	GROUP BY yearof, year_produc
 	ORDER BY 1;
 SELECT *
@@ -660,9 +663,170 @@ AS
 SELECT * 
 FROM avg_produc;
 
+--
 SELECT yearof,
 	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_incr
 FROM avg_produc
+ORDER BY 2 DESC;
+
+-- ====================================================
+-- Production in Regions
+
+DROP TABLE IF EXISTS prod_temp_regions;
+CREATE TEMP TABLE prod_temp_regions
+AS
+SELECT c.shortname AS country, 
+	i.indicatorname  AS indicator_name, 
+	i.indicatorcode As icode,
+	sum(round(i.value::numeric, 1)) production
+FROM indicators i 
+JOIN country c ON i.countrycode = c.countrycode
+JOIN population p ON c.countrycode = p.countrycode
+WHERE lower(i.indicatorname) LIKE'%electricity prod%' AND lower(i.indicatorcode) LIKE'%zs' AND i.value <>0 AND p."Year" = i."Year" AND c.region=''
+GROUP BY c.shortname, i.indicatorname, i.indicatorcode 
+ORDER BY (1,2); 
+
+SELECT country, 
+	icode, 
+	production
+FROM prod_temp_regions
+WHERE icode LIKE '%ZS'
+ORDER BY 1,2;
+
+-- Electricity production in % / kWh of totalby countries
+DROP TABLE IF EXISTS cross_production_regions;
+CREATE TEMP TABLE cross_production_regions
+AS
+	SELECT * 
+	FROM crosstab('
+		select country,
+		icode, 
+		sum(production) as sum_prod 
+		from prod_temp_regions
+		group by country, icode
+		order by 1,2 ')
+	AS final_result_regions(
+		country varchar(200),
+		"EG.ELC.COAL.ZS" numeric,
+		"EG.ELC.FOSL.ZS" numeric,
+		"EG.ELC.HYRO.ZS" numeric,
+		"EG.ELC.NGAS.ZS" numeric,
+		"EG.ELC.NUCL.ZS" numeric,
+		"EG.ELC.PETR.ZS" numeric,
+		"EG.ELC.RNWX.ZS" numeric)
+	ORDER BY 2 DESC;
+SELECT *
+FROM cross_production_regions;
+	
+-- Highest production from COAL (% of total)
+SELECT country, "EG.ELC.COAL.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.COAL.ZS" IS NOT NULL
+ORDER by 2 DESC;
+
+-- Lowest / no production from COAL (% of total)
+SELECT country, "EG.ELC.COAL.ZS"
+FROM cross_production_regions
+ORDER by 2;
+
+-- Highest production from oil, gas and coal (% of total)
+SELECT country, "EG.ELC.FOSL.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.FOSL.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from oil, gas and coal (% of total)
+SELECT country, "EG.ELC.FOSL.ZS"
+FROM cross_production_regions
+ORDER BY 2;
+
+-- Highest production from hydroelectric sources (% of total)
+SELECT country, "EG.ELC.HYRO.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.HYRO.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from hydroelectric sources (% of total)
+SELECT country, "EG.ELC.HYRO.ZS"
+FROM cross_production_regions
+ORDER BY 2;
+
+-- Highest production from natural gas sources (% of total)
+SELECT country, "EG.ELC.NGAS.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.NGAS.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from natural gas sources (% of total)
+SELECT country, "EG.ELC.NGAS.ZS"
+FROM cross_production_regions
+ORDER BY 2;
+
+-- Highest production from nuclear sources (% of total)
+SELECT country, "EG.ELC.NUCL.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.NUCL.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from nuclear sources (% of total)
+SELECT country, "EG.ELC.NUCL.ZS"
+FROM cross_production_regions
+ORDER BY 2;
+
+-- Highest production from oil sources (% of total)
+SELECT country, "EG.ELC.PETR.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.PETR.ZS" IS NOT NULL
+ORDER BY 2 DESC;
+
+-- Lowest / no production from oil sources (% of total)
+SELECT country, "EG.ELC.PETR.ZS"
+FROM cross_production_regions
+ORDER BY 2;
+
+-- Highest production from renewable sources, excluding hydroelectric (% of total)
+SELECT country, "EG.ELC.RNWX.ZS"
+FROM cross_production_regions
+WHERE "EG.ELC.RNWX.ZS" IS NOT NULL
+ORDER by 2 DESC;
+
+-- Lowest / no production from renewable sources, excluding hydroelectric (% of total)
+SELECT country, "EG.ELC.RNWX.ZS"
+FROM cross_production_regions
+ORDER by 2;
+
+
+-- Annual production without grouping by countries 
+DROP TABLE IF EXISTS year_produc_world_regions;
+CREATE TEMP TABLE year_produc_world_regions
+AS
+	SELECT i."Year" AS yearof,
+		round(i.value::numeric, 1) AS year_produc,
+		lag(round(i.value::numeric, 1)) OVER (PARTITION BY  i."Year") year_produc_prev
+	FROM indicators i
+	JOIN country c ON i.countrycode = c.countrycode
+	JOIN population p ON c.countrycode = p.countrycode
+	WHERE lower(i.indicatorname) LIKE '%electricity prod%' AND lower(i.indicatorcode) LIKE '%zs' AND i.value <>0 AND p."Year" = i."Year" AND c.region=''
+	GROUP BY yearof, year_produc
+	ORDER BY 1;
+SELECT *
+FROM year_produc_world_regions;
+
+DROP TABLE IF EXISTS avg_produc_regions;
+CREATE TEMP TABLE avg_produc_regions
+AS
+	SELECT yearof, 
+		round(avg(year_produc)::numeric, 2) avg_year_produc,
+		round(avg(year_produc_prev)::numeric, 2) avg_year_produc_prev		
+	FROM year_produc_world_regions
+	GROUP BY yearof;
+SELECT * 
+FROM avg_produc_regions;
+
+--
+SELECT yearof,
+	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_incr
+FROM avg_produc_regions
 ORDER BY 2 DESC;
 
 

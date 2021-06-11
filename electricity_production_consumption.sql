@@ -523,7 +523,7 @@ AS
 SELECT c.shortname AS country, 
 	i.indicatorname  AS indicator_name, 
 	i.indicatorcode As icode,
-	round(i.value::numeric, 1) production
+	round(i.value::numeric, 2) production
 FROM indicators i 
 JOIN country c ON i.countrycode = c.countrycode
 JOIN population p ON c.countrycode = p.countrycode
@@ -673,7 +673,7 @@ FROM avg_produc;
 SELECT yearof,
 	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_incr
 FROM avg_produc
-ORDER BY 2 ;
+ORDER BY 2;
 
 -- ====================================================
 -- Production in Regions
@@ -833,7 +833,7 @@ FROM avg_produc_regions;
 SELECT yearof,
 	round((avg_year_produc - avg_year_produc_prev)/avg_year_produc_prev,4)*100 AS percent_avg_year_produc_incr
 FROM avg_produc_regions
-ORDER BY 2 DESC;
+ORDER BY 2 ;
 
 
 -- to be continued...

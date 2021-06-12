@@ -90,7 +90,7 @@ where lower(indicatorname) like '%imports%';
 --Import metali
 
 drop table zsumowane_wartosci_import; 
---zsumowanie waroœci i œrednia importu dla wszystkich krajów i regionów
+--zsumowanie waroï¿½ci i ï¿½rednia importu dla wszystkich krajï¿½w i regionï¿½w
 create temp table zsumowane_wartosci_import
 as
 select 	ic2.countryname
@@ -106,14 +106,14 @@ group by ic2.value , ic2.countryname, ic2.indicatorname, ic2."Year"
 ;
 select  * from zsumowane_wartosci_import;
 
---Przyrost iloœciowy importu
+--Przyrost iloï¿½ciowy importu
 
 select  distinct countryname 
 ,		suma_import_metali
 from zsumowane_wartosci_import
 order by suma_import_metali desc ;
 
--- Iloœciowo top 10 (Japonia, Belgia, Indie, Niemcy, W³ochy, Norwegia, Korea po³udniowa, Wielka Brytania, Finladia, Turcja)
+-- Iloï¿½ciowo top 10 (Japonia, Belgia, Indie, Niemcy, Wï¿½ochy, Norwegia, Korea poï¿½udniowa, Wielka Brytania, Finladia, Turcja)
 
 --Procentowy przyrost importu
 create temp table Zmiana_proc_import_metali
@@ -132,7 +132,7 @@ from zmiana_proc_import_metali
 order by zmiana_proc_40 desc
 ;
 
---W tej tabeli mo¿emy zobaczyæ ¿e najwiêkszy przyrost procentowy zaobserwowa³ Nepal dalej Senegal, Paragwaj, Islandia, Wêgry, Tunezja, Turcja i Ekwador
+--W tej tabeli moï¿½emy zobaczyï¿½ ï¿½e najwiï¿½kszy przyrost procentowy zaobserwowaï¿½ Nepal dalej Senegal, Paragwaj, Islandia, Wï¿½gry, Tunezja, Turcja i Ekwador
 
 
 --Fuel imports
@@ -160,7 +160,7 @@ select  distinct countryname
 from zsumowane_wartosci_importu_paliw
 order by suma_import_paliw desc ;
 
---Top 10 (Japonia, Bahamy, Indie, Brazylia, Trynidad i Tobago, Jamaika, Pakistan, Singapur, Korea po³udniowa, Bahrain)
+--Top 10 (Japonia, Bahamy, Indie, Brazylia, Trynidad i Tobago, Jamaika, Pakistan, Singapur, Korea poï¿½udniowa, Bahrain)
 
 
 create temp table Zmiana_proc_import_paliw
@@ -178,5 +178,6 @@ select distinct countryname
 from zmiana_proc_import_paliw
 order by zmiana_proc_40 desc;
 
---procentowo najwiêksze zmiany mo¿na zaobserowaæ u Seszeli, Arabi Saudyjskiej, Bahrainu, Nigerii, Barbados, Trynidad i tobago, Nepal, Gwinea równikowa
+--procentowo najwiï¿½ksze zmiany moï¿½na zaobserowaï¿½ u Seszeli, Arabi Saudyjskiej, Bahrainu, Nigerii, Barbados, Trynidad i tobago, Nepal, Gwinea rï¿½wnikowa
+--zmiany
 

@@ -1,0 +1,8 @@
+TEMAT: Co słychać w zatoce piratów?
+
+● https://www.kaggle.com/nolanbconaway/whatcd-hiphop
+
+● Cel Statystyczny: Analiza statystyczna danych.
+
+● Cel Python: Aplikacja automatycznie tworząca różnewykresy i zestawieniadanych
+

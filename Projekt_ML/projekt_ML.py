@@ -1,5 +1,4 @@
 import streamlit as strlit
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import altair as alt
@@ -20,8 +19,6 @@ import xgboost as xgb
 import pickle
 
 # options for Streamlit
-plt.style.use('dark_background')
-strlit.set_option('deprecation.showPyplotGlobalUse', False)
 strlit.set_page_config(page_title="WDevs",initial_sidebar_state="expanded")
 strlit.caption('**_Płace_ Data Scientistów** :sunglasses: by WDevs, 2021')
 

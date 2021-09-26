@@ -22,12 +22,12 @@ from tree_class import RandomTree # klasa Modelu Rafała
 
 # options for Streamlit
 strlit.set_page_config(page_title="WDevs",initial_sidebar_state="expanded")
-strlit.caption('**_Płace_ Data Scientistów** :sunglasses: by WDevs, 2021')
+strlit.caption('**_Salaries _ in IT** :sunglasses: by WDevs, 2021')
 
 # variables on sidebar
 strlit.sidebar.title("Model's variables:")
-comm = ["Wait a minute... we run around the disk looking for data... ", "Where are you in a hurry?", "We'll be done in time of blink of an eye...", 
-        "I'm counting... But calculator is slow...", "Relax. You won't have time to make coffee..."]
+comm = ["Wait a minute... we run around the disk looking for data... ", "Why are you in a hurry?", "We'll be done in time of blink of an eye...", 
+        "I'm calculating... But calculator is slow...", "Relax. You won't have time to make coffee..."]
 year = strlit.sidebar.number_input("Choose year: ", min_value=2017, max_value=2020)
 
 job_sats = [3, 2, 1]
@@ -213,12 +213,10 @@ if strlit.button("Predict"):
         Ypred_Reg = ModelReg.predict(Y)
         Ypred_Tree = ModelTree.predict(Y)
         Ypred_XGB = ModelXGB.predict(Y)
-
-
         
         strlit.header("** Predicted value: ** ")
         
-        strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)))
-        strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)))
-        strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)))
+        strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)) +str(' $/y'))
+        strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)) +str(' $/y'))
+        strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)) +str(' $/y'))
         strlit.success('Well done :sunglasses:')

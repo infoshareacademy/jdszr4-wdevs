@@ -22,17 +22,6 @@ import pickle
 strlit.set_page_config(page_title="WDevs",initial_sidebar_state="expanded")
 strlit.caption('**_Płace_ Data Scientistów** :sunglasses: by WDevs, 2021')
 
-#loading pikles
-with open("Linear_regression_model.pkl", "rb") as file_reg:
-    ModelReg = pickle.load(file_reg)
-
-with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
-    ModelTree = pickle.load(file_tree)
-
-with open("XGBoost_Model.pkl", "rb") as file_xgboost:
-    ModelXGB = pickle.load(file_xgboost)
-
-
 # variables on sidebar
 strlit.sidebar.title("Model's variables:")
 
@@ -205,6 +194,16 @@ if error == False:
     Y = pd.DataFrame(np.array([X]), columns=x)
 
 if strlit.button("Predict"):
+    #loading pikles
+    with open("Linear_regression_model.pkl", "rb") as file_reg:
+        ModelReg = pickle.load(file_reg)
+
+    with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
+        ModelTree = pickle.load(file_tree)
+
+    with open("XGBoost_Model.pkl", "rb") as file_xgboost:
+        ModelXGB = pickle.load(file_xgboost)
+
     Ypred_Reg = ModelReg.predict(Y)
     Ypred_Tree = ModelTree.predict(Y)
     Ypred_XGB = ModelXGB.predict(Y)

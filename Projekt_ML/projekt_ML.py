@@ -17,7 +17,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score, train_test_split, KFold, StratifiedKFold, GridSearchCV
 from sklearn.metrics import mean_squared_error, accuracy_score, classification_report
 import xgboost as xgb
-import pickle
+import pickle 
+from tree_class import RandomTree # klasa Modelu Rafała 
 
 # options for Streamlit
 strlit.set_page_config(page_title="WDevs",initial_sidebar_state="expanded")
@@ -27,7 +28,7 @@ strlit.caption('**_Płace_ Data Scientistów** :sunglasses: by WDevs, 2021')
 strlit.sidebar.title("Model's variables:")
 comm = ["Wait a minute... we run around the disk looking for data... ", "Where are you in a hurry?", "We'll be done in time of blink of an eye...", 
         "I'm counting... But calculator is slow...", "Relax. You won't have time to make coffee..."]
-year = strlit.sidebar.number_input("Choose year: ", min_value=1990, max_value=2021)
+year = strlit.sidebar.number_input("Choose year: ", min_value=2017, max_value=2020)
 
 job_sats = [3, 2, 1]
 job_sat = strlit.sidebar.selectbox("Choose job satisfaction [1-poor to 3 - best]: ", job_sats, )
@@ -212,6 +213,8 @@ if strlit.button("Predict"):
         Ypred_Reg = ModelReg.predict(Y)
         Ypred_Tree = ModelTree.predict(Y)
         Ypred_XGB = ModelXGB.predict(Y)
+
+
         
         strlit.header("** Predicted value: ** ")
         

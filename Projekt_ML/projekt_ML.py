@@ -1,6 +1,7 @@
 import streamlit as strlit
 import numpy as np
 import pandas as pd
+import random as rd
 import altair as alt
 import seaborn as sns
 from scipy import stats as st
@@ -24,7 +25,8 @@ strlit.caption('**_Płace_ Data Scientistów** :sunglasses: by WDevs, 2021')
 
 # variables on sidebar
 strlit.sidebar.title("Model's variables:")
-
+comm = ["Wait a minute... we run around the disk looking for data... ", "Where are you in a hurry?", "We'll be done in time of blink of an eye...", 
+        "I'm counting... But calculator is slow...", "Relax. You won't have time to make coffee..."]
 year = strlit.sidebar.number_input("Choose year: ", min_value=1990, max_value=2021)
 
 job_sats = [3, 2, 1]
@@ -194,22 +196,26 @@ if error == False:
     Y = pd.DataFrame(np.array([X]), columns=x)
 
 if strlit.button("Predict"):
-    #loading pikles
-    with open("Linear_regression_model.pkl", "rb") as file_reg:
-        ModelReg = pickle.load(file_reg)
-
-    with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
-        ModelTree = pickle.load(file_tree)
-
-    with open("XGBoost_Model.pkl", "rb") as file_xgboost:
-        ModelXGB = pickle.load(file_xgboost)
-
-    Ypred_Reg = ModelReg.predict(Y)
-    Ypred_Tree = ModelTree.predict(Y)
-    Ypred_XGB = ModelXGB.predict(Y)
+    strlit.spinner()
     
-    strlit.header("** Predicted value: ** ")
-    
-    strlit.markdown("** Linear model: **" + str(round(Ypred_Reg[0],2)))
-    strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)))
-    strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)))
+    with strlit.spinner(text=rd.choice(comm)):
+        #loading pikles
+        with open("Linear_regression_model.pkl", "rb") as file_reg:
+            ModelReg = pickle.load(file_reg)
+
+        with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
+            ModelTree = pickle.load(file_tree)
+
+        with open("XGBoost_Model.pkl", "rb") as file_xgboost:
+            ModelXGB = pickle.load(file_xgboost)
+
+        Ypred_Reg = ModelReg.predict(Y)
+        Ypred_Tree = ModelTree.predict(Y)
+        Ypred_XGB = ModelXGB.predict(Y)
+        
+        strlit.header("** Predicted value: ** ")
+        
+        strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)))
+        strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)))
+        strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)))
+        strlit.success('Well done :sunglasses:')

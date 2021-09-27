@@ -198,25 +198,37 @@ if error == False:
 
 if strlit.button("Predict"):
     strlit.spinner()
-    
+
+
     with strlit.spinner(text=rd.choice(comm)):
         #loading pikles
-        with open("Linear_regression_model.pkl", "rb") as file_reg:
-            ModelReg = pickle.load(file_reg)
-
-        with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
-            ModelTree = pickle.load(file_tree)
-
-        with open("XGBoost_Model.pkl", "rb") as file_xgboost:
-            ModelXGB = pickle.load(file_xgboost)
-
-        Ypred_Reg = ModelReg.predict(Y)
-        Ypred_Tree = ModelTree.predict(Y)
-        Ypred_XGB = ModelXGB.predict(Y)
-        
         strlit.header("** Predicted value: ** ")
+
+        try: 
+            with open("Linear_regression_model.pkl", "rb") as file_reg:
+                ModelReg = pickle.load(file_reg)
+        except OSError:
+                "Could not open/read file to predict using regression model."
+        else:
+            Ypred_Reg = ModelReg.predict(Y)
+            strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)) +str(' $/y'))
+
+        try: 
+            with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
+                ModelTree = pickle.load(file_tree)
+        except OSError:
+                "Could not open/read file to predict using Tree model."
+        else:
+            Ypred_Tree = ModelTree.predict(Y)
+            strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)) +str(' $/y'))
         
-        strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)) +str(' $/y'))
-        strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)) +str(' $/y'))
-        strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)) +str(' $/y'))
+        try: 
+            with open("XGBoost_Model.pkl", "rb") as file_xgboost:
+                ModelXGB = pickle.load(file_xgboost)
+        except OSError:
+                "Could not open/read file to predict using XGBoost model."
+        else:
+            Ypred_XGB = ModelXGB.predict(Y)
+            strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)) +str(' $/y'))
+        
         strlit.success('Well done :sunglasses:')

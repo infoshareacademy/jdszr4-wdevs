@@ -25,6 +25,7 @@ strlit.set_page_config(page_title="WDevs",initial_sidebar_state="expanded")
 strlit.caption('**_Salaries _ in IT** :sunglasses: by WDevs, 2021')
 
 # variables on sidebar
+
 strlit.sidebar.title("Model's variables:")
 comm = ["Wait a minute... we run around the disk looking for data... ", "Why are you in a hurry?", "We'll be done in time of blink of an eye...", 
         "I'm calculating... But calculator is slow...", "Relax. You won't have time to make coffee..."]
@@ -70,6 +71,25 @@ li_org_size = ["1 - freelancer, sole prioprietor, etc.", "1,000 to 4,999 employe
                 "5,000 to 9,999 employees", "500 to 999 employees", "Fewer than 10 employees", "I don't know", "I prefer not to answer"]
             
 org_size = strlit.sidebar.selectbox("Choose size of organization: ", li_org_size)
+x = ['Year','JobSat','YearsCodePro','C++_lang','Common_Lisp_lang','Clojure_lang','CoffeeScript_lang','Dart_lang',
+    'Elixir_lang','Erlang_lang','F#_lang','Go_lang','Groovy_lang','Hack_lang','Haskell_lang','Java_lang',
+    'JavaScript_lang','Julia_lang','Lua_lang','Matlab_lang','Objective-C_lang','Perl_lang','PHP_lang','Python_lang',
+    'R_lang','Ruby_lang','Rust_lang','Scala_lang','Smalltalk_lang','SQL_lang','Swift_lang','TypeScript_lang',
+    'VB.NET_lang','VBA_lang','WebAssembly_lang','Cobol_lang','Delphi/Object_Pascal_lang','HTML/CSS_lang',
+    'Kotlin_lang','Bash/Shell/PowerShell_lang','Ocaml_lang','Other_lang','MongoDB_1','MySQL_1','Oracle_1','PostgreSQL_1',
+    'Redis_1','Microsoft_SQL_Server_1','SQLite_1','Amazon_DynamoDB_1','IBM_DB2_1','MariaDB_1','Amazon_RDS/Aurora_1',
+    'Amazon_Redshift_1','Apache_HBase_1','Apache_Hive_1','Cassandra_1','Couchbase1','Elasticseach_1','Firebase_1',
+    'Google_BigQuery_1','Google_Cloud_Storage_1','Memcached_1','Microsoft_Azure_(Tables, CosmosDB, SQL, etc)_1',
+    'Neo4j_1','Other_1','Academic, educator, researcher','Data scientist or ML','Database admin','Desktop app dev',
+    'System admin','Developer with stat','Back-end dev','Graphic design','Front-end dev','Full-stack dev',
+    'Game/graphics dev','QA/test eng','Mobile dev','DevOps','Embedded Developer','Other dev','CEO, CTO, etc',
+    'Engineer of site reliability','Engineering Manager','Marketing or sales Professional','Product Manager',
+    'Senior Executive/VP','Students','Web developers','Hobbyist_Yes','Employment_Employed part-time',
+    'Employment_Independent contractor, freelancer, or self-employed','Employment_not employed',
+    'OrgSize_1,000 to 4,999 employees','OrgSize_10 to 19 employees','OrgSize_10,000 or more employees',
+    'OrgSize_100 to 499 employees','OrgSize_20 to 99 employees','OrgSize_5,000 to 9,999 employees',
+    'OrgSize_500 to 999 employees','OrgSize_Fewer than 10 employees','OrgSize_I don\'t know',
+    'OrgSize_I prefer not to answer']
 
 #składanie
 #if strlit.sidebar.button("Check inserted data: "):
@@ -173,62 +193,42 @@ if error == False:
             x_org_size.append(0)
     X = X + x_org_size
 
-    x = ['Year','JobSat','YearsCodePro','C++_lang','Common_Lisp_lang','Clojure_lang','CoffeeScript_lang','Dart_lang',
-    'Elixir_lang','Erlang_lang','F#_lang','Go_lang','Groovy_lang','Hack_lang','Haskell_lang','Java_lang',
-    'JavaScript_lang','Julia_lang','Lua_lang','Matlab_lang','Objective-C_lang','Perl_lang','PHP_lang','Python_lang',
-    'R_lang','Ruby_lang','Rust_lang','Scala_lang','Smalltalk_lang','SQL_lang','Swift_lang','TypeScript_lang',
-    'VB.NET_lang','VBA_lang','WebAssembly_lang','Cobol_lang','Delphi/Object_Pascal_lang','HTML/CSS_lang',
-    'Kotlin_lang','Bash/Shell/PowerShell_lang','Ocaml_lang','Other_lang','MongoDB_1','MySQL_1','Oracle_1','PostgreSQL_1',
-    'Redis_1','Microsoft_SQL_Server_1','SQLite_1','Amazon_DynamoDB_1','IBM_DB2_1','MariaDB_1','Amazon_RDS/Aurora_1',
-    'Amazon_Redshift_1','Apache_HBase_1','Apache_Hive_1','Cassandra_1','Couchbase1','Elasticseach_1','Firebase_1',
-    'Google_BigQuery_1','Google_Cloud_Storage_1','Memcached_1','Microsoft_Azure_(Tables, CosmosDB, SQL, etc)_1',
-    'Neo4j_1','Other_1','Academic, educator, researcher','Data scientist or ML','Database admin','Desktop app dev',
-    'System admin','Developer with stat','Back-end dev','Graphic design','Front-end dev','Full-stack dev',
-    'Game/graphics dev','QA/test eng','Mobile dev','DevOps','Embedded Developer','Other dev','CEO, CTO, etc',
-    'Engineer of site reliability','Engineering Manager','Marketing or sales Professional','Product Manager',
-    'Senior Executive/VP','Students','Web developers','Hobbyist_Yes','Employment_Employed part-time',
-    'Employment_Independent contractor, freelancer, or self-employed','Employment_not employed',
-    'OrgSize_1,000 to 4,999 employees','OrgSize_10 to 19 employees','OrgSize_10,000 or more employees',
-    'OrgSize_100 to 499 employees','OrgSize_20 to 99 employees','OrgSize_5,000 to 9,999 employees',
-    'OrgSize_500 to 999 employees','OrgSize_Fewer than 10 employees','OrgSize_I don\'t know',
-    'OrgSize_I prefer not to answer']
-
-    
     Y = pd.DataFrame(np.array([X]), columns=x)
 
-if strlit.button("Predict"):
-    strlit.spinner()
 
+    if strlit.button("Predict"):
+        strlit.spinner()
+        with strlit.spinner(text=rd.choice(comm)):
+            #loading pikles
+            strlit.header("** Predicted value: ** ")
 
-    with strlit.spinner(text=rd.choice(comm)):
-        #loading pikles
-        strlit.header("** Predicted value: ** ")
+            try: 
+                with open("Linear_regression_model.pkl", "rb") as file_reg:
+                    ModelReg = pickle.load(file_reg)
+            except OSError:
+                    "Could not open/read file to predict using regression model."
+            else:
+                Ypred_Reg = ModelReg.predict(Y)
+                strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)) +str(' $/y'))
 
-        try: 
-            with open("Linear_regression_model.pkl", "rb") as file_reg:
-                ModelReg = pickle.load(file_reg)
-        except OSError:
-                "Could not open/read file to predict using regression model."
-        else:
-            Ypred_Reg = ModelReg.predict(Y)
-            strlit.markdown("** LinReg model: **" + str(round(Ypred_Reg[0],2)) +str(' $/y'))
-
-        try: 
-            with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
-                ModelTree = pickle.load(file_tree)
-        except OSError:
-                "Could not open/read file to predict using Tree model."
-        else:
-            Ypred_Tree = ModelTree.predict(Y)
-            strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)) +str(' $/y'))
-        
-        try: 
-            with open("XGBoost_Model.pkl", "rb") as file_xgboost:
-                ModelXGB = pickle.load(file_xgboost)
-        except OSError:
-                "Could not open/read file to predict using XGBoost model."
-        else:
-            Ypred_XGB = ModelXGB.predict(Y)
-            strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)) +str(' $/y'))
-        
-        strlit.success('Well done :sunglasses:')
+            try: 
+                with open("Pickle_Tree_Model.pkl", "rb") as file_tree:
+                    ModelTree = pickle.load(file_tree)
+            except OSError:
+                    "Could not open/read file to predict using Tree model."
+            else:
+                Ypred_Tree = ModelTree.predict(Y)
+                strlit.markdown("** Tree model: **" + str(round(Ypred_Tree[0],2)) +str(' $/y'))
+            
+            try: 
+                with open("XGBoost_Model.pkl", "rb") as file_xgboost:
+                    ModelXGB = pickle.load(file_xgboost)
+            except OSError:
+                    "Could not open/read file to predict using XGBoost model."
+            else:
+                Ypred_XGB = ModelXGB.predict(Y)
+                strlit.markdown("** XGBoost model: **" + str(round(Ypred_XGB[0],2)) +str(' $/y'))
+            
+            strlit.success('Well done :sunglasses:')
+else:
+    strlit.error("You did not enter your data yet...")
